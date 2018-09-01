@@ -1,0 +1,423 @@
+/*
+ * File: PiPion.ino
+ * ------------------------------
+ * Author: Erick Blankenberg
+ * Date:   7/30/2018
+ *
+ * Description:
+ *  This sketch uses a teensy 3.6 as both a sampling buffer 
+ *  and waveform generator for the AWESEM project. The main file
+ *  maintains messanger commands and coordinates DAC and ADC work.
+ *  The AdcManager class internally maintains sample buffers and allows
+ *  for transfers. The DacManager class keeps track of the waveform outputs.
+ *  I tried to use messageCMD but there seems to be no easy way to 
+ *  pass lists, which makes efficient transfer of sample buffers difficult.
+ *  
+ * Install List:
+ *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html
+ *  - CircularBuffer: https://github.com/rlogiacco/CircularBuffer#retrieve-data
+ */
+
+//----------------------------- Command List ----------------------------- 
+
+/*
+ * Serial commands: (float is 4 bytes, uint8_t and char are 1 byte etc.)
+ *       All commands are in the format {byte1, byte2, [bytes3...bytesn (datatype)], [bytesn+1...bytesm (datatype)]
+ * 
+ * Note: You need to 'H' (halt) and 'B' (begin) to refresh settings. Set 
+ *       parameters will not take effect until the system has been refreshed.
+ * 
+ * TODO now user asks for particular channel
+ * 
+ *  {'p'}                                                                 - Ping command, responds with 'A'
+ * 
+ *  {'f', [axis (uint8_t)]}                                               - Responds with the DAC frequency of the specified axis as a float in hertz. Format is {['A' if valid request, 'F' if invalid (only byte) (char)][frequency in hertz (float)]}
+ *  
+ *  {'F', [axis (uint8_t)], [frequency (float)]}                          - Sets the frequency of the given DAC axis in hertz, 0 for A and 1 for B. Responds with 'A' if succesful, 'F' otherwise.
+ *  
+ *  {'m', [axis (uint8_t)]}                                               - Responds with the magnitude of the specified axis. Format {['A' if valid request, 'F' if invalid (only byte) (char)][magnitude in volts (float)]}
+ *  
+ *  {'M', [axis (uint8_t)], [magnitude (float)]}                          - Sets the frequency of the given axis, 0 for A and 1 for B. Responds with 'A' if succesful.
+ *  
+ *  {'s'}                                                                 - Responds with the current sampling frequency in hertz. Format {[magnitude in volts (float)]}
+ *  
+ *  {'S', [sFrequency (float)]}                                           - Sets the sampling frequency in hertz. Response is 'A' if succesful.                        
+ *  
+ *  {'w', [axis (uint8_t)]}                                               - Reads the current waveform, return format is Format {['A' if valid request, 'F' if invalid (only byte) (char)][0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8_t)]}
+ *  
+ *  {'W', [axis (uint8_t)], [waveform (0 sine, 1 saw, 3 tria) (uint8_t)]} - Sets the waveform used in scanning, responds with 'A' if succesful
+ *  
+ *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [duration of scan in microseconds (uint16_t)] 
+ *                                                                          [offset from last A start in microseconds (uint16_t)], [offset from last B start in microseconds (uint16_t)],
+ *                                                                          [byte array of data of the length BUFFER_SIZE defined in AdcManager.h (uint8_t)]}
+ *                                                                        
+ *  {'B'}                                                                 - Begins all sampling and waveform outputs simultaneously, response is 'A'.                              
+ *  
+ *  {'H'}                                                                 - Halts all sampling and waveform outputs simultaneously, response is 'A'.
+ */
+
+//-------------------------- Included Libraries --------------------------
+
+#include "DacManager.hpp"
+#include "AdcManager.hpp"
+
+//--------------------------- Global Variables ---------------------------
+
+typedef union { // Makes printing and recieving floats easy
+ float number;
+ uint8_t bytes[4];
+} FLOATUNION_t;
+
+typedef union { // Makes printing and recieving uint32's easy
+ float number;
+ uint8_t bytes[4];
+} UINT32UNION_t;
+
+// Misc debugging pins (includes built in LED)
+#define LED_RED      1
+#define LED_YELLOW   2
+#define LED_BLUE     3
+#define LED_GREEN    4
+#define LED_MAIN     13
+
+
+#define SERIAL_TIMEOUT 1000 // Timeout for serial in milliseconds
+#define SERIAL_FLUSH   100  // Timeout to discard data originally
+
+
+//------------------------------ Functions -------------------------------
+
+/*
+ * Description:
+ *  Tries to retrieve a single byte from the serial stream.
+ *  Will eventually time out if this does not occur.
+ */
+inline uint8_t getSerialUInt8() {
+  elapsedMillis timeOut = 0;
+  while(Serial.available() < 1) {
+    if(timeOut > SERIAL_TIMEOUT) {
+      String error = "Byte Acquisition Error";
+      debugLEDError(error);
+    }
+  }
+  return (uint8_t) Serial.read();
+}
+
+/*
+ * Description:
+ *  Tries to retrieve a floating point number from the serial stream.
+ *  Will eventually time out if this does not occur.
+ */
+inline float getSerialFloat() {
+  elapsedMillis timeOut = 0;
+  while(Serial.available() < 4) {
+    if(timeOut > SERIAL_TIMEOUT) {
+      String error = "Float Acquisition Error";
+      debugLEDError(error);
+    }
+  }
+  FLOATUNION_t newValue;
+  newValue.bytes[0] = Serial.read();
+  newValue.bytes[1] = Serial.read();
+  newValue.bytes[2] = Serial.read();
+  newValue.bytes[3] = Serial.read();
+  return newValue.number;
+}
+
+/*
+ * Description:
+ *  Tries to retrieve a uint32_t from the serial stream.
+ *  Will eventually time out.
+ */
+inline uint32_t getSerialUint32() {
+  elapsedMillis timeOut = 0;
+  while(Serial.available() < 4) {
+    if(timeOut > SERIAL_TIMEOUT) {
+      String error = "Integer Acquisition Error";
+      debugLEDError(error);
+    }
+  }
+  UINT32UNION_t newValue;
+  newValue.bytes[0] = Serial.read();
+  newValue.bytes[1] = Serial.read();
+  newValue.bytes[2] = Serial.read();
+  newValue.bytes[3] = Serial.read();
+  return newValue.number;
+}
+
+/*
+ * Description:
+ *  Initializes LED's and other debugging resources.
+ */
+void debugInit() {
+  pinMode(LED_MAIN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_YELLOW, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  digitalWrite(LED_MAIN, LOW);
+}
+
+/*
+ * Description:
+ *  Turns on the LED
+ */
+void debugLEDError(String errorMessage) {
+  digitalWrite(LED_MAIN, HIGH);
+  while(1) {
+    Serial.println(errorMessage);
+    Serial.send_now();
+    delay(1000);
+  }
+}
+
+/*
+ * Description:
+ *  Reads a command string to return the current DAC waveform frequency.
+ *  
+ * Parameters:
+ *  'parameterString' Format is "f".
+ * 
+ * Response:
+ *  Responds with the DAC frequencies in the format {(float) freqA, (float) freqB} 
+ *  as 4 byte floats in hertz.
+ */
+void parseGetDacFrequency() {
+  uint8_t currentChannel = getSerialUInt8();
+  if(currentChannel == 1 || currentChannel == 0) {
+    Serial.write('A');
+    FLOATUNION_t freq;
+    freq.number = Dac_getFrequency(currentChannel);
+    Serial.write(freq.bytes, 4);
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string to set the frequency of one of two
+ *  axis.
+ */
+void parseSetDacFrequency() {
+  uint8_t currentChannel = getSerialUInt8();
+  float desiredFrequency = getSerialFloat();
+  if(Dac_setFrequency(currentChannel, desiredFrequency)) {
+    Serial.write('A');
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string to print out the magnitude of
+ *  each of the two axis.
+ */
+void parseGetDacMagnitude() {
+  uint8_t currentChannel = getSerialUInt8();
+  if(currentChannel == 0 || currentChannel == 1) {
+    Serial.write('A');
+    FLOATUNION_t outMagnitude;
+    outMagnitude.number = Dac_getMagnitude(currentChannel);
+    Serial.write(outMagnitude.bytes, 4);
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string to set the magnitude of the output
+ *  waveform.
+ */
+void parseSetDacMagnitude() {
+  uint8_t currentChannel = getSerialUInt8();
+  float desiredMagnitude = getSerialFloat();
+  if(Dac_setMagnitude(currentChannel, desiredMagnitude)) {
+    Serial.write('A');
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Prints out the waveforms associated with the two axis.
+ */
+void parseGetDacWaveform() {
+  uint8_t currentChannel = getSerialUInt8();
+  if(currentChannel == 1 || currentChannel == 0) {
+    Serial.write('A');
+    uint8_t dacWaveform = Dac_getWaveform(currentChannel);
+    Serial.write(dacWaveform);
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string to set the magnitude of the output
+ *  waveform.
+ */
+void parseSetDacWaveform() {
+  uint8_t currentChannel = getSerialUInt8();
+  uint8_t desiredWaveform = getSerialUInt8();
+  if(Dac_setWaveform(currentChannel, desiredWaveform)) {
+    Serial.write('A');
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+ /*
+  * Description:
+  *   Reads a command string and responds with the
+  *   sampling frequency of the device.
+  * 
+  * Response:
+  *   Responds with the DAC frequencies in the format 
+  *   freqA then freqB as floats in hertz as raw bytes.
+  */
+void parseGetSFrequency() {
+  FLOATUNION_t freqFloat;
+  freqFloat.number = Adc_getFrequency();
+  Serial.write(freqFloat.bytes, 4);
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Sets the sampling frequency of the device. Assumes that
+ *  we will be recieving a float.
+ */
+void parseSetSFrequency() {
+  float newFrequency = getSerialFloat();
+  Adc_setFrequency(newFrequency);
+  Serial.write('A');
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *   Reads a command string and prints out a buffer of data.
+ */
+void parseGetBuffer() {
+  if(Adc_bufferReady()) {
+    Serial.write('A');
+    sampleBuffer newData = Adc_getLatestBuffer(); // Not really sure whether dynamic allocation or passing by value is more evil, may be worthwhile to look at the C++ version of the buffer
+    UINT32UNION_t aStartVal;
+    UINT32UNION_t bStartVal;
+    UINT32UNION_t durationVal;
+    aStartVal.number = newData.aStart;
+    bStartVal.number = newData.bStart;
+    durationVal.number = newData.duration;
+    Serial.write(aStartVal.bytes, 4); // Start relative to last A start (microSeconds)
+    Serial.write(bStartVal.bytes, 4); // Start relative to last B start (microSeconds)
+    Serial.write(durationVal.bytes, 4); // Duration (microSeconds)
+    Serial.write(newData.data, newData.currentSize); // All data 
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string and starts all scanning and 
+ *  the DAC output.
+ */
+void parseStartEvents() {
+  Adc_resume();
+  Dac_resume();
+  Serial.write('A');
+  Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Reads a command string and stops all scanning and 
+ *  the DAC output. Note that this also resets the ADC
+ *  buffer and starts off with a fresh start.
+ */
+void parseStopEvents() {
+  Adc_pause();
+  Dac_pause();
+  Serial.write('A');
+  Serial.send_now();
+}
+
+//----------------------------- The Program ------------------------------
+
+void setup() {
+  Serial.begin(115200); // Used for native usb
+  elapsedMillis flushCounter;
+  while(flushCounter < SERIAL_FLUSH) {
+    if(Serial.available()) {
+      Serial.read();
+    }
+  }
+  debugInit();
+  Adc_init();
+  Dac_init();
+}
+
+/*
+ * Main loop just recieves serial commands
+ */
+void loop() {
+  if(Serial.available()) {
+    uint8_t switchValue = Serial.read();
+    switch(switchValue) {
+      case 'p': // Ping
+        Serial.write('A');
+        break;
+      case 'f': // Reads dac frequency
+        parseGetDacFrequency();
+        break;
+      case 'F': // Sets dac frequency
+        parseSetDacFrequency();
+        break;
+      case 'm': // Reads magnitude
+        parseGetDacMagnitude();
+        break;
+      case 'M': // Sets magnitude
+        parseSetDacMagnitude();
+        break;
+      case 'w': // Reads waveform
+        parseGetDacWaveform();
+        break;
+      case 'W': // Sets waveform
+        parseSetDacWaveform();
+        break;
+      case 's': // Reads sampling frequency in hertz
+        parseGetSFrequency();
+        break;
+      case 'S': // Sets sampling frequency in hertz
+        parseSetSFrequency();
+        break;
+      case 'A': // Acquires current buffer
+        parseGetBuffer();
+        break;
+      case 'B': // Begins all actions
+        parseStartEvents();
+        break;
+      case 'H': // Halts all actions
+        parseStopEvents();
+        break;
+      default:
+        String error = "Command Value Error: ";
+        error += switchValue;
+        debugLEDError(error);
+        break;
+    }
+  }
+}
+
