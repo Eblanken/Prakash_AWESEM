@@ -21,12 +21,12 @@
 
 IntervalTimer            AUpdater;
 IntervalTimer            BUpdater;
-elapsedMillis            aDuration;
-elapsedMillis            bDuration;
+elapsedMicros            aDuration;
+elapsedMicros            bDuration;
 float                    channelAFrequency = 1.0; // Frequency in hertz
 float                    channelBFrequency = 0.5; // Frequency in hertz
-uint8_t                  channelAWaveform  = 1.0; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-uint8_t                  channelBWaveform  = 1.0; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+uint8_t                  channelAWaveform  = 3; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+uint8_t                  channelBWaveform  = 3; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
 float                    channelAMagnitude = 0.1; // Magnitude relative to reference, [0 - 1] * vRef
 float                    channelBMagnitude = 0.1; // Magnitude relative to reference, [0 - 1] * vRef
 AudioSynthWaveform       ChannelA;

@@ -21,6 +21,9 @@
 #define DAC_APRIORITY 122 // Priority for timer reset functions
 #define DAC_BPRIORITY 123 // for both axis for timing tracking.
 
+#define DAC_DEBUG // Uncomment to enable LED alternation whenever 
+#define DAC_DEBUG_PIN_A 31 // TODO not used
+#define DAC_DEBUG_PIN_B 32
 
 //----------------------- Functions ----------------------
 

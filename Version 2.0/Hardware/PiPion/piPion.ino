@@ -41,13 +41,18 @@
  *  
  *  {'s'}                                                                 - Responds with the current sampling frequency in hertz. Format {[magnitude in volts (float)]}
  *  
- *  {'S', [sFrequency (float)]}                                           - Sets the sampling frequency in hertz. Response is 'A' if succesful.                        
+ *  {'S', [sFrequency (float)]}                                           - Sets the sampling frequency in hertz. Response is 'A' if succesful 'F' if invalid.                        
+ *  
+ *  {'u'}                                                                 - Responds with the current number of samples averaged per adc datapoint. Format {[samples averages (uint8_t]}
+ *   
+ *  {'U', [averages (uint8_t)]}                                           - Sets the number of samples averaged per adc datapoint. Response is 'A' if succesful, 'F' if invalid. 
  *  
  *  {'w', [axis (uint8_t)]}                                               - Reads the current waveform, return format is Format {['A' if valid request, 'F' if invalid (only byte) (char)][0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8_t)]}
  *  
  *  {'W', [axis (uint8_t)], [waveform (0 sine, 1 saw, 3 tria) (uint8_t)]} - Sets the waveform used in scanning, responds with 'A' if succesful
  *  
- *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [duration of scan in microseconds (uint16_t)] 
+ *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [scan number (uint8_t)], 
+ *                                                                          [duration of scan in microseconds (uint16_t)],
  *                                                                          [offset from last A start in microseconds (uint16_t)], [offset from last B start in microseconds (uint16_t)],
  *                                                                          [byte array of data of the length BUFFER_SIZE defined in AdcManager.h (uint8_t)]}
  *                                                                        
@@ -69,7 +74,7 @@ typedef union { // Makes printing and recieving floats easy
 } FLOATUNION_t;
 
 typedef union { // Makes printing and recieving uint32's easy
- float number;
+ uint32_t number;
  uint8_t bytes[4];
 } UINT32UNION_t;
 
@@ -84,15 +89,51 @@ typedef union { // Makes printing and recieving uint32's easy
 #define SERIAL_TIMEOUT 1000 // Timeout for serial in milliseconds
 #define SERIAL_FLUSH   100  // Timeout to discard data originally
 
+#define SERIAL_DEBUG // Uncomment to enabe
+#define SERIAL_DEBUG_PIN_BUFFERSENDOFF 12 // Alternates when a buffer is sent
+
+#ifdef SERIAL_DEBUG
+volatile bool lastSentOn = false;
+#endif
+
 
 //------------------------------ Functions -------------------------------
+
+/*
+ * Description:
+ *  Initializes LED's and other debugging resources.
+ */
+void debugInit() {
+  pinMode(LED_MAIN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_YELLOW, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  digitalWriteFast(LED_MAIN, LOW);
+  #ifdef SERIAL_DEBUG
+  pinMode(SERIAL_DEBUG_PIN_BUFFERSENDOFF, OUTPUT);
+  #endif
+}
+
+/*
+ * Description:
+ *  Turns on the LED
+ */
+void debugLEDError(String errorMessage) {
+  digitalWrite(LED_MAIN, HIGH);
+  while(1) {
+    Serial.println(errorMessage);
+    Serial.send_now();
+    delay(1000);
+  }
+}
 
 /*
  * Description:
  *  Tries to retrieve a single byte from the serial stream.
  *  Will eventually time out if this does not occur.
  */
-inline uint8_t getSerialUInt8() {
+uint8_t getSerialUInt8() {
   elapsedMillis timeOut = 0;
   while(Serial.available() < 1) {
     if(timeOut > SERIAL_TIMEOUT) {
@@ -108,7 +149,7 @@ inline uint8_t getSerialUInt8() {
  *  Tries to retrieve a floating point number from the serial stream.
  *  Will eventually time out if this does not occur.
  */
-inline float getSerialFloat() {
+float getSerialFloat() {
   elapsedMillis timeOut = 0;
   while(Serial.available() < 4) {
     if(timeOut > SERIAL_TIMEOUT) {
@@ -129,7 +170,7 @@ inline float getSerialFloat() {
  *  Tries to retrieve a uint32_t from the serial stream.
  *  Will eventually time out.
  */
-inline uint32_t getSerialUint32() {
+uint32_t getSerialUint32() {
   elapsedMillis timeOut = 0;
   while(Serial.available() < 4) {
     if(timeOut > SERIAL_TIMEOUT) {
@@ -143,32 +184,6 @@ inline uint32_t getSerialUint32() {
   newValue.bytes[2] = Serial.read();
   newValue.bytes[3] = Serial.read();
   return newValue.number;
-}
-
-/*
- * Description:
- *  Initializes LED's and other debugging resources.
- */
-void debugInit() {
-  pinMode(LED_MAIN, OUTPUT);
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_YELLOW, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  digitalWrite(LED_MAIN, LOW);
-}
-
-/*
- * Description:
- *  Turns on the LED
- */
-void debugLEDError(String errorMessage) {
-  digitalWrite(LED_MAIN, HIGH);
-  while(1) {
-    Serial.println(errorMessage);
-    Serial.send_now();
-    delay(1000);
-  }
 }
 
 /*
@@ -307,22 +322,52 @@ void parseSetSFrequency() {
 
 /*
  * Description:
+ *  Returns the number of samples averaged per ADC data point.
+ */
+void parseGetSAverages() {
+  Serial.write(Adc_getAverages());
+}
+
+/*
+ * Description:
+ *  Sets the number of samples averaged per ADC datapoint.
+ *  Assumed to be recieving a uint8_t. Value is 0, 4, 8, 16 or 32.
+ */
+void parseSetSAverages() {
+  uint8_t newAveraging = getSerialUInt8();
+  if(Adc_setAverages(newAveraging)) {
+    Serial.write('A');
+  } else {
+    Serial.write('F');
+  }
+  Serial.send_now();
+}
+
+/*
+ * Description:
  *   Reads a command string and prints out a buffer of data.
  */
 void parseGetBuffer() {
-  if(Adc_bufferReady()) {
+  sampleBuffer * newData = Adc_getLatestBuffer();
+  if(newData) {
     Serial.write('A');
-    sampleBuffer newData = Adc_getLatestBuffer(); // Not really sure whether dynamic allocation or passing by value is more evil, may be worthwhile to look at the C++ version of the buffer
+    UINT32UNION_t currentCount;
+    currentCount.number = newData->number;
+    Serial.write(currentCount.bytes, 4);
     UINT32UNION_t aStartVal;
     UINT32UNION_t bStartVal;
     UINT32UNION_t durationVal;
-    aStartVal.number = newData.aStart;
-    bStartVal.number = newData.bStart;
-    durationVal.number = newData.duration;
+    aStartVal.number = newData->aStart; //newData.aStart;
+    bStartVal.number = newData->bStart; //newData.bStart;
+    durationVal.number = newData->duration; //newData.duration;
     Serial.write(aStartVal.bytes, 4); // Start relative to last A start (microSeconds)
     Serial.write(bStartVal.bytes, 4); // Start relative to last B start (microSeconds)
     Serial.write(durationVal.bytes, 4); // Duration (microSeconds)
-    Serial.write(newData.data, newData.currentSize); // All data 
+    Serial.write(newData->data, ADC_SAMPLESIZE); // May be inefficient, TODO is there a way to pass a buffer pointer?
+    #ifdef SERIAL_DEBUG
+    digitalWriteFast(SERIAL_DEBUG_PIN_BUFFERSENDOFF, lastSentOn);
+    lastSentOn = !lastSentOn;
+    #endif
   } else {
     Serial.write('F');
   }
@@ -402,6 +447,12 @@ void loop() {
         break;
       case 'S': // Sets sampling frequency in hertz
         parseSetSFrequency();
+        break;
+      case 'u':
+        parseGetSAverages(); // Gets number of averages per adc result
+        break;
+      case 'U':
+        parseSetSAverages(); // Sets number of averages per adc result
         break;
       case 'A': // Acquires current buffer
         parseGetBuffer();

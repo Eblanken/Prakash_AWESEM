@@ -15,20 +15,22 @@
 
 #include "AdcManager.hpp"
 #include "DacManager.hpp"
+#include "AdcBuffer.hpp"
 #include "Arduino.h"
 #include "ADC.h"
-#include "CircularBuffer.h"
 #include "IntervalTimer.h"
 
 //----------------------- Private Variables ---------------------
 
-IntervalTimer                                         AdcSampleTimer;
-#define CIRCULAR_BUFFER_INT_SAFE
-CircularBuffer<sampleBuffer, ADC_BUFFERSIZE>          AdcBuffer;
-ADC                                                   Adc;
-float                                                 adcSampleFrequency = 5000;
+IntervalTimer  AdcSampleTimer;
+ADC            Adc;
+uint8_t        adcAverages = ADC_AVERAGES;
+float          adcSampleFrequency = ADC_SAMPLEFREQUENCY;
+elapsedMicros  duration;
+uint32_t       totalPacketCount = 0;
+uint32_t       currentSampleCount = 0;
 #ifdef ADC_DEBUG
-bool lastOn = false;
+volatile bool lastOn = false;
 #endif
 
 //----------------------- Public Functions ----------------------
@@ -37,16 +39,17 @@ bool lastOn = false;
 
 /*
  * Description:
- *  Constructor for the adc manager class.
+ *  Initializes hardware resources for the ADC.
  */
 void Adc_init() {
   pinMode(ADC_PIN, INPUT);
   AdcSampleTimer.priority(ADC_SAMPLEPRIORITY);
   Adc.enableInterrupts(ADC_0);
-  Adc.setAveraging(ADC_AVERAGES);
+  Adc.setAveraging(adcAverages);
   Adc.setResolution(8);
   #ifdef ADC_DEBUG
-  pinMode(ADC_DEBUG_PIN, OUTPUT);
+  pinMode(ADC_DEBUG_PIN_SAMPLE, OUTPUT);
+  pinMode(ADC_DEBUG_PIN_BUFFERXCHANGE, OUTPUT);
   #endif
 }
 
@@ -57,19 +60,8 @@ void Adc_init() {
  * Returns:
  *  Pointer to the latest and greatest.
  */
-sampleBuffer Adc_getLatestBuffer() {
-  return AdcBuffer.pop(); // TODO very inefficient handling of data            
-}
-
-/*
- * Description:
- *  Returns whether or not any data is ready to be taken.
- *  
- * Returns:
- *  True if there is data available, false otherwise.
- */
-bool Adc_bufferReady() {
-  return AdcBuffer.size() > 0;
+sampleBuffer * Adc_getLatestBuffer() {
+  return AdcBuffer_getTail();            
 }
 
 /*
@@ -93,12 +85,34 @@ float Adc_getFrequency() {
 
 /*
  * Description:
+ * 
+ */
+uint8_t Adc_getAverages() {
+  return adcAverages;
+}
+
+/*
+ * Description:
+ *  Sets the number of averages, value must be 0, 4, 8, 16 or 32.
+ * 
+ * Parameters:
+ *  'newAverages' The number of samples per adc result.
+ */
+bool Adc_setAverages(uint8_t newAverages) {
+  if((newAverages % 4 == 0) && (newAverages <= 32)) {
+    adcAverages = newAverages;
+    return true;
+  }
+  return false;
+}
+
+/*
+ * Description:
  *  Halts interrupts for the ADC conversion. Note
  *  that all elements in the buffer are reset.
  */
 void Adc_pause() {
   AdcSampleTimer.end();
-  AdcBuffer.clear();
 }
 
 /*
@@ -106,10 +120,10 @@ void Adc_pause() {
  *  Propmpts ADC conversion to begin.
  */
 void Adc_samplePrep() {
-  #ifdef ADC_DEBUG
-  digitalWrite(ADC_DEBUG_PIN, HIGH);
-  #endif
   Adc.startSingleRead(ADC_PIN, ADC_0);
+  #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
+  digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, HIGH);
+  #endif
 }
 
 /*
@@ -117,6 +131,10 @@ void Adc_samplePrep() {
  *  Resumes interrupts for the ADC conversion.
  */
 void Adc_resume() {
+  AdcBuffer_resetBuffer();
+  currentSampleCount = 0;
+  duration           = 0;
+  Adc.setAveraging(adcAverages);
   AdcSampleTimer.begin(Adc_samplePrep, MICROSFROMFREQ(adcSampleFrequency));
 }
 
@@ -125,26 +143,23 @@ void Adc_resume() {
  *  The actual interrupt called when conversion is complete.
  */
 void adc0_isr() {
-  static elapsedMillis duration; // Increments automatically
-  static sampleBuffer currentSample; // Bit the bullet and used a struct directly in the queue, there may be faster ways to do this
-  currentSample.data[currentSample.currentSize++] = Adc.readSingle();
-  // TODO seperate intervaltimer for shifting data, we may be losing data here.
-  if(currentSample.currentSize >= ADC_SAMPLESIZE) {
-    currentSample.duration = duration;
-    AdcBuffer.unshift(currentSample);
-    #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
-    if(lastOn) {
-      digitalWriteFast(ADC_DEBUG_PIN, LOW);
-      lastOn = false;
-    } else {
-      digitalWriteFast(ADC_DEBUG_PIN, HIGH);
-      lastOn = true;
-    }
+  static sampleBuffer *       currentSample = AdcBuffer_getHead(); // TODO first buffer does not have proper Aoffset and Boffset, maybe does not matter since both are 0?
+  currentSample->data[currentSampleCount++] = Adc.readSingle();
+  #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
+  digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, LOW);
+  #endif
+  if(currentSampleCount >= ADC_SAMPLESIZE) {
+    #ifdef ADC_DEBUG
+    digitalWriteFast(ADC_DEBUG_PIN_BUFFERXCHANGE, lastOn);
+    lastOn = !lastOn;
     #endif
+    currentSample->duration = duration;
+    currentSample->number = totalPacketCount++;
     duration = 0;
-    currentSample.currentSize = 0; // Same buffer is recycled endlessly
-    currentSample.aStart = Dac_getAOffsetMicros();
-    currentSample.bStart = Dac_getBOffsetMicros();
+    currentSampleCount = 0;
+    currentSample = AdcBuffer_getHead();
+    currentSample->aStart = Dac_getAOffsetMicros();
+    currentSample->bStart = Dac_getBOffsetMicros();
   }
 }
 
