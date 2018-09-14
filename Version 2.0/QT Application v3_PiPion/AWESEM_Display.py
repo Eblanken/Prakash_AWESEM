@@ -17,49 +17,52 @@
 #  - Erick Blankenberg, adapted to use teensy 3.6.
 #
 
+import threading as pyth
+from   math import ceil
 from   PyQt5.QtGui import *
 from   PyQt5.QtCore import *
 import numpy as np
 import AWESEM_Constants as Const
 import AWESEM_Data as Data
 from   AWESEM_WaveGen import WaveGen
+from time import perf_counter
 
 class Display(QThread):
     loadedImage = pyqtSignal(QImage)
     ColorsLUT = []
-    TempPointsDict = {} # Format is (x, y):[sumElems, numElems]
+    TempPointsDict = dict() # Format is (x, y):[sumElems, numElems]
 
     # Prepares the color LUT (for efficiency)
     # and creates the base image.
     def __init__(self):
         super().__init__()
         self.scanA = Const.IMG.copy(0, 0, Const.defw, Const.defh)
-        for i in range(256):
+        self._LoadTimer = pyth.Timer(Const.ADC_POLLPERIOD, self.run)
+        for i in range(257):
             self.ColorsLUT.append(QColor(i, i, i, 255))
 
     # Each time the thread is run, it plots all available data
-    def run(self):
-        print("Displaying")
-        print(len(data.sampleData))
-        testing = perf_counter()
-
-        # Loads bulk data
-        while(True):
-            try:
-                valueBlock = Data.sampleData.popleft()
-            except:
-                break
-            np.apply_along_axis(self._logPoints, 0, valueBlock)
-        
-        # Moves to display
-        for currentKey in TempPointsDict:
-            currentValues = TempPointsDict[currentKey]
-            self.scanA.setPixelColor(currentKey(0), currentKey(1), self.ColorsLUT[currentValues(0) / currentValues(1)])
-        TempPointsDict.clear()
-        
-        print("Generating Image:", perf_counter() - testing)
-        print("Finished Image...")
-        self.loadedImage.emit(self.scanA)
+    def load(self):
+        self._LoadTimer = pyth.Timer(Const.ADC_POLLPERIOD, self.load)
+        self._LoadTimer.start() # TODO code stink here
+        if (len(Data.sampleData) > 0):
+            #print("Display: Loading %d" % (len(Data.sampleData)))
+            # Loads bulk data
+            while(True):
+                try:
+                    valueBlock = Data.sampleData.pop()
+                except:
+                    break
+                np.apply_along_axis(self._logPoints, 1, valueBlock)
+            # Moves to display
+            for currentKey in self.TempPointsDict:
+                currentValues = self.TempPointsDict[currentKey]
+                self.scanA.setPixelColor(currentKey[0], currentKey[1], self.ColorsLUT[int(ceil(currentValues[0] / currentValues[1]))])
+            self.TempPointsDict.clear()
+            self.loadedImage.emit(self.scanA)
+            #print("Display: Updated display")
+        #else:
+            #print("Display: No Data")
     
     #
     # Description:
@@ -67,16 +70,28 @@ class Display(QThread):
     #   this data point to the corresponding location in an image 
     #   update data structure.
     #
-    def _logPoints(dataRow):
+    def _logPoints(self, dataRow):
         # TODO this whole thing seems really inefficient, may be way to generate tons of LUT values
         # at once more quickly or maybe better way to log values to dictionary or maybe there is
         # a better alternative to a dictionary altogether. I am not sure how efficient dictionaries are, especially when adding lots of new keys.
-        plotx = WaveGen.TriaLUT(dataRow(1) % (Const.bill / Const.XHz), Const.defw, Const.bill / Const.XHz)
-        ploty = WaveGen.SawtLUT(dataRow(2), Const.defh, Const.bill / Const.YHz)
-        oldVals = TempPointsDict[(plotx, ploty)]
-        newVals = [dataRow(3), 1]
+        plotx = round(WaveGen.SawtLUT(dataRow[0], Const.defw, Const.mill / Const.XHz))
+        ploty = round(WaveGen.SawtLUT(dataRow[1], Const.defh, Const.mill / Const.YHz))
+        #print("Display: Logged %d %d from %d %d" % (plotx, ploty, dataRow[0], dataRow[1]))
+        try:
+            oldVals = self.TempPointsDict[(plotx, ploty)]
+        except:
+            oldVals = [0, 0]
+        newVals = [dataRow[2], 1]
         if oldVals is not None:
-            newVals(0) += oldVals(0)
-            newVals(1) += oldVals(1)
-        TempPointsDict[(plotx, ploty)] = newVals
+            newVals[0] += oldVals[0]
+            newVals[1] += oldVals[1]
+        self.TempPointsDict[(plotx, ploty)] = newVals
             
+    def start(self):
+        print("Display: Started")
+        self._LoadTimer = pyth.Timer(Const.ADC_POLLPERIOD, self.load)
+        self._LoadTimer.start()
+
+    def stop(self):
+        print("Display: Stopped")
+        self._LoadTimer.cancel()

@@ -64,15 +64,15 @@ class Ui_MainWindow(object):
         self.label_6.setObjectName("label_6")
         self.XZoomSlider = QtWidgets.QSlider(self.XZoomGroup)
         self.XZoomSlider.setGeometry(QtCore.QRect(70, 93, 271, 27))
-        self.XZoomSlider.setMinimum(-6)
-        self.XZoomSlider.setMaximum(0)
-        self.XZoomSlider.setSingleStep(0)
+        self.XZoomSlider.setMinimum(0)
+        self.XZoomSlider.setMaximum(330)
+        self.XZoomSlider.setSingleStep(5)
         self.XZoomSlider.setPageStep(20)
-        self.XZoomSlider.setProperty("value", -3)
-        self.XZoomSlider.setSliderPosition(-3)
+        self.XZoomSlider.setProperty("value", 165)
+        self.XZoomSlider.setSliderPosition(165)
         self.XZoomSlider.setOrientation(QtCore.Qt.Horizontal)
         self.XZoomSlider.setTickPosition(QtWidgets.QSlider.TicksAbove)
-        self.XZoomSlider.setTickInterval(1)
+        self.XZoomSlider.setTickInterval(10)
         self.XZoomSlider.setObjectName("XZoomSlider")
         self.label_12 = QtWidgets.QLabel(self.XZoomGroup)
         self.label_12.setGeometry(QtCore.QRect(186, 67, 16, 19))
@@ -119,15 +119,15 @@ class Ui_MainWindow(object):
         self.label_9.setObjectName("label_9")
         self.YZoomSlider = QtWidgets.QSlider(self.XZoomGroup_2)
         self.YZoomSlider.setGeometry(QtCore.QRect(70, 93, 271, 27))
-        self.YZoomSlider.setMinimum(-6)
-        self.YZoomSlider.setMaximum(0)
-        self.YZoomSlider.setSingleStep(0)
+        self.YZoomSlider.setMinimum(0)
+        self.YZoomSlider.setMaximum(330)
+        self.YZoomSlider.setSingleStep(5)
         self.YZoomSlider.setPageStep(20)
-        self.YZoomSlider.setProperty("value", -3)
-        self.YZoomSlider.setSliderPosition(-3)
+        self.YZoomSlider.setProperty("value", 165)
+        self.YZoomSlider.setSliderPosition(165)
         self.YZoomSlider.setOrientation(QtCore.Qt.Horizontal)
         self.YZoomSlider.setTickPosition(QtWidgets.QSlider.TicksAbove)
-        self.YZoomSlider.setTickInterval(1)
+        self.YZoomSlider.setTickInterval(10)
         self.YZoomSlider.setObjectName("YZoomSlider")
         self.label_16 = QtWidgets.QLabel(self.XZoomGroup_2)
         self.label_16.setGeometry(QtCore.QRect(186, 67, 16, 19))
@@ -190,41 +190,41 @@ class Ui_MainWindow(object):
         self.ref_secondsT.setText(_translate("MainWindow",
                                              "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">seconds</span></p></body></html>"))
         self.XResetB.setText(_translate("MainWindow", "Reset"))
-        self.XUpdateB.setText(_translate("MainWindow", "Update Scan"))
+        self.XUpdateB.setText(_translate("MainWindow", "Update"))
         self.XScanLabel.setToolTip(_translate("MainWindow",
                                               "<html><head/><body><p>Change zoom level across horizontal axis.</p></body></html>"))
         self.XScanLabel.setText(_translate("MainWindow",
-                                           "<html><head/><body><p align=\"center\"><span style=\" font-size:18pt; color:#00007f;\">X-Scan Zoom Level (m)</span></p></body></html>"))
+                                           "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt; color:#00007f;\">X-Magnitude (Vpp)</span></p></body></html>"))
         self.label_6.setText(_translate("MainWindow",
-                                        "<html><head/><body><p>10<span style=\" vertical-align:super;\">-2</span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_2.setText(_translate("MainWindow",
-                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">1.5</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\">mV</span></p></body></html>"))
+                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">0</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\"></span></p></body></html>"))
         self.label_8.setText(_translate("MainWindow",
-                                        "<html><head/><body><p>10<span style=\" vertical-align:super;\">-1</span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_3.setText(_translate("MainWindow",
-                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">1.5</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\">V</span></p></body></html>"))
+                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">3.3</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\"></span></p></body></html>"))
         self.label_5.setText(_translate("MainWindow",
-                                        "<html><head/><body><p>10<span style=\" vertical-align:super;\">0</span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_7.setText(_translate("MainWindow",
-                                        "<html><head/><body><p>10<span style=\" vertical-align:super;\">-3</span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.YResetB.setText(_translate("MainWindow", "Reset"))
-        self.YUpdateB.setText(_translate("MainWindow", "Update Scan"))
+        self.YUpdateB.setText(_translate("MainWindow", "Update"))
         self.YScanLabel.setToolTip(
             _translate("MainWindow", "<html><head/><body><p>Change zoom level across vertical axis.</p></body></html>"))
         self.YScanLabel.setText(_translate("MainWindow",
-                                           "<html><head/><body><p align=\"center\"><span style=\" font-size:18pt; color:#00007f;\">Y-Scan Zoom Level (m)</span></p></body></html>"))
+                                           "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt; color:#00007f;\">Y-Magnitude (Vpp)</span></p></body></html>"))
         self.label_9.setText(_translate("MainWindow",
-                                        "<html><head/><body><p>10<span style=\" vertical-align:super;\">-2</span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_4.setText(_translate("MainWindow",
-                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">1.5</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\">mV</span></p></body></html>"))
+                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">0</span><span style=\" font-size:8pt; font-weight:600; font-style:italic;\"></span></p></body></html>"))
         self.label_10.setText(_translate("MainWindow",
-                                         "<html><head/><body><p>10<span style=\" vertical-align:super;\">-1</span></p></body></html>"))
+                                         "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_17.setText(_translate("MainWindow",
-                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">1.5</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\">V</span></p></body></html>"))
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">3.3</span><span style=\" font-size:10pt; font-weight:600; font-style:italic;\"></span></p></body></html>"))
         self.label_18.setText(_translate("MainWindow",
-                                         "<html><head/><body><p>10<span style=\" vertical-align:super;\">0</span></p></body></html>"))
+                                         "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.label_19.setText(_translate("MainWindow",
-                                         "<html><head/><body><p>10<span style=\" vertical-align:super;\">-3</span></p></body></html>"))
+                                         "<html><head/><body><p><span style=\" vertical-align:super;\"></span></p></body></html>"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
         self.menuView.setTitle(_translate("MainWindow", "View"))

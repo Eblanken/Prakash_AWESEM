@@ -33,6 +33,7 @@ class AWESEM_PiPion_Interface:
     # Initializes communications over serial to the PiPion
     def __init__(self):
         self.reconnectToPion()
+        self._lastBlock = 0 # Tracks buffer count
 
     # Prints information for debugging
     def setVerbose(self, enableVerbose):
@@ -211,7 +212,42 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<cf', b'S', adcFrequency))
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
-
+    
+    #
+    # Description:
+    #   Sets the number of averaged samples per ADC result.
+    #
+    # Parameters:
+    #   'adcAverages' The number of times to average per sample, must be 0, 4, 8, 16, or 32
+    #
+    # Returns:
+    #   True if succesful, false otherwise.
+    #
+    # Note:
+    #   Updated ADC frequency will not take effect until
+    #   the beginEvents() and pauseEvents() commands are called.
+    #
+    def setAdcAverages(self, adcAverages):
+        if self._currentlyConnected:
+            self._sendBytes(struct.pack('<cb', b'U', adcAverages))
+            return struct.unpack('<c', self._readBytes(1)) == b'A'
+        return False
+    
+    #
+    # Description:
+    #   Returns the number of averages per ADC result, none
+    #   if the device is disconnected.
+    #
+    # Returns:
+    #   None if disconnected, integer number of averages per ADC result
+    #   if connected.
+    #
+    def getAdcAverages(self):
+        if self._currentlyConnected:
+            self._sendBytes(struct.pack('<c', b'u'))
+            return struct.unpack('<b')
+        return None
+        
     #
     # Description:
     #   Acquires a data buffer from the MCU.
@@ -222,19 +258,21 @@ class AWESEM_PiPion_Interface:
     def getDataBuffer(self):
         if self._currentlyConnected:
             self._sendBytes(struct.pack('<c', b'A'))
-            if self._readBytes(1) == b'A':
-                # Result consists of two 32 bit integers and then an
+            ackResponse = self._readBytes(1)
+            if ackResponse == b'A':
+                currentNumber = struct.unpack('<I', self._readBytes(4))
+                # Result consists of three 32 bit integers and then an
                 # array of bytes.
-                byteArray = numpy.array(self._readBytes(self._DATASTRUCT_TIMEBYTES * 3 + self._DATASTRUCT_BUFFERSIZE))
-                print()
-                print(byteArray.shape)
-                times = struct.unpack('<III', byteArray[0:8])
-                duration = times(0)
-                aOffset  = times(1)
-                bOffset  = times(2)
-                return numpy.concatenate(numpy.linspace(aOffset, aOffset + duration, self._DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._DATASTRUCT_BUFFERSIZE), byteArray, 2) # format is [data, aTimes, bTimes] as column vectors
+                aOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
+                bOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
+                duration = (struct.unpack('<I', self._readBytes(4)))[0]
+                byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
+                byteArray = numpy.frombuffer(byteList, numpy.uint8)
+                value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors 
+                return value
             elif self._verbose:
-                print("Error: AWSEM_getDataBuffer, ackowledgement failure")
+                print("Error: AWSEM_getDataBuffer, no buffer ready")
+                print(ackResponse)
         elif self._verbose:
             print("Error: AWSEM_getDataBuffer, unit disconnected")
         return None
@@ -268,8 +306,6 @@ class AWESEM_PiPion_Interface:
     # Sends a serial command to the PiPion in the form of a byte array
     def _sendBytes(self, command):
         self._serialPort.write(command)
-        #if(self._verbose): TODO AWESEM_PiPion_Interface: console debug output
-        #    print("Command is: %s" % command)
 
     # Reads values from the PiPion
     def _readBytes(self, numBytes):
@@ -280,7 +316,7 @@ class AWESEM_PiPion_Interface:
         portList = list_ports.comports()
         if self._verbose:
             print("Searching for the PiPion:")
-        for index in range(0, self._RECONNECTIONATTEMPTS):
+        for index in range(0, self._SERIAL_RECONNECTIONATTEMPTS):
             for currentPort in portList:
                 try:
                     self._serialPort = serial.Serial(currentPort.device)
@@ -308,8 +344,6 @@ class AWESEM_PiPion_Interface:
     _serialPort = None # Object for serial communication
 
     # Constants
-    _SERIAL_RECONNECTIONATTEMPTS = 2 # Number of times to try all ports once.
-    _SERIAL_TIMEOUT = 1 # Timeout in seconds
-    _RECONNECTIONATTEMPTS = 5
-    _DATASTRUCT_TIMEBYTES = 4 # Uses signed int
-    _DATASTRUCT_BUFFERSIZE = 1024 # Make sure that this is the same as specified in the MCU code
+    _SERIAL_RECONNECTIONATTEMPTS = 1 # Number of times to try all ports once.
+    _SERIAL_TIMEOUT = 0.1 # Timeout in seconds
+    _SERIAL_DATASTRUCT_BUFFERSIZE = 1024 # Make sure that this is the same as specified in the MCU code
