@@ -24,30 +24,28 @@ import AWESEM_Constants as Const
 # UZPOut Class:
 # 
 
-class WavGen:
-    MCUInterface
+class WaveGen:
     # Performs necessary setup operations to prepare
     # the waveform generators.
     def __init__(self, PiPionInterface):
-        self.MCUInterface = PiPionInterface
-        self.MCUInterface.setDacWaveform(0, Const.XWave)
-        self.MCUInterface.setDacWaveform(1, Const.YWave)
-        self.MCUInterface.setDacFrequency(0, Const.XHz)
-        self.MCUInterface.setDacFrequency(1, Const.YHz)
-        self.MCUInterface.setDacMagnitude(0, Const.XMag)
-        self.MCUInterface.setDacMagnitude(1, Const.YMag)
-        self.generateLUT()
+        self._MCUInterface = PiPionInterface
+        self._MCUInterface.setDacWaveform(0, Const.XWave)
+        self._MCUInterface.setDacWaveform(1, Const.YWave)
+        self._MCUInterface.setDacFrequency(0, Const.XHz)
+        self._MCUInterface.setDacFrequency(1, Const.YHz)
+        self._MCUInterface.setDacMagnitude(0, Const.XMag)
+        self._MCUInterface.setDacMagnitude(1, Const.YMag)
 
     # Generates the lookup tables for possible usage in the display thread
     @staticmethod
     def generateLUT():
-        xcors = AWESEM_Waveout.mTria(Const.waveRes, Const.defw)
-        xtval = AWESEM_Waveout.mSawt(Const.waveRes, Const.bill / Const.XHz)
-        data.LUTX = UVS(xtval, xcors, None, [None, None], 1)
+        xcors = WaveGen.mTria(Const.waveRes, Const.defw)
+        xtval = WaveGen.mSawt(Const.waveRes, Const.mill / Const.XHz)
+        Data.LUTX = UVS(xtval, xcors, None, [None, None], 1)
 
-        ycors = AWESEM_Waveout.mSawt(Const.waveRes, Const.defh)
-        ytval = AWESEM_Waveout.mSawt(Const.waveRes, Const.bill / Const.YHz)
-        data.LUTY = UVS(ytval, ycors, None, [None, None], 1)
+        ycors = WaveGen.mSawt(Const.waveRes, Const.defh)
+        ytval = WaveGen.mSawt(Const.waveRes, Const.mill / Const.YHz)
+        Data.LUTY = UVS(ytval, ycors, None, [None, None], 1)
 
     # Returns a list of size numS that traces one period of a sine wave
     # (lowest pt at 0, highest pt at amp)
@@ -85,17 +83,17 @@ class WavGen:
     # it returns the position value of the wave at that point.
     @staticmethod
     def TriaLUT(inp, amp, domain):
-        if inp < domain / 2:
+        if inp < (domain / 2):
             return 2 * amp * inp / domain
         else:
-            return amp - 2 * amp * (inp - domain / 2) / domain
+            return amp - (2 * amp * (inp - domain / 2) / domain)
 
     # Emulates an LUT by "reversing" the sawtooth wave.
     # Given input time, time domain, and amplitude of wave,
     # it returns the position value of the wave at that point.
     @staticmethod
-    def SawtLUT(inp, amp, domain):
-        return amp * inp / domain
+    def SawtLUT(inp, amp, period):
+        return float(amp) * ((float(inp) % float(period)) / float(period)) # TODO this is really slow
 
     # Starts the waveform generators and records the start time
     # to allow for syncing with the data thread.

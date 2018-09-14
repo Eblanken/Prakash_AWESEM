@@ -23,22 +23,27 @@ import AWESEM_Constants as Const
 sampleData = deque(maxlen=250500)
 
 class DataIn:
-    _MCUInterface
-    _SampleTimer
-
     def __init__(self, PiPionInterface):
         # super().__init__()
         self._MCUInterface = PiPionInterface
-        self._MCUInterface.setAdcFrequency() # TODO
-        self._SampleTimer = pyth.Timer(Const.FREQ_OF_SAMPLE, self.sample)
+        self._MCUInterface.setAdcFrequency(Const.ADC_SAMPLEFREQUENCY)
+        self._SampleTimer = pyth.Timer(Const.DISPLAY_POLLPERIOD, self.sample)
 
     def sample(self):
-        sampleData.put(MCUInterface.getDataBuffer()) # TODO numpy may have methods? Faster to enqueue all rows or to enqueue blocks?
-
+        self._SampleTimer = pyth.Timer(Const.DISPLAY_POLLPERIOD, self.sample)
+        self._SampleTimer.start() # TODO code stink here
+        value = self._MCUInterface.getDataBuffer()
+        if value is not None:
+            sampleData.append(value) # TODO numpy may have methods? Faster to enqueue all rows or to enqueue blocks
+        #print("Data: Buffer size: %d" % len(sampleData))
+        
     def start(self):
+        print("Data: Started")
+        self._SampleTimer = pyth.Timer(Const.DISPLAY_POLLPERIOD, self.sample)
         self._SampleTimer.start()
-        MCUInterface.beginEvents()
+        self._MCUInterface.beginEvents()
 
     def stop(self):
+        print("Data: Stopped")
         self._SampleTimer.cancel()
-        MCUInterface.pauseEvents()
+        self._MCUInterface.pauseEvents()

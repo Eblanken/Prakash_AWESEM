@@ -20,6 +20,7 @@ import sys
 from   PyQt5.QtWidgets  import *
 from   PyQt5.QtGui      import *
 from   PyQt5.QtCore     import *
+from   AWESEM_PiPion_Interface import AWESEM_PiPion_Interface
 import AWESEM_Data      as Data
 import AWESEM_Display   as Display
 import AWESEM_Gui       as Gui
@@ -40,16 +41,14 @@ class Master(QObject):
 
     def __init__(self):
         super().__init__()
-        self.app = QApplication(sys.argv)
-        self.window = Gui.GUI()
-        self.displayTh = Display.Display()
-        self.dataTh = Data.DataIn()
+        self._MCUInterface = AWESEM_PiPion_Interface();
+        self.app           = QApplication(sys.argv)
+        self.window        = Gui.GUI(self._MCUInterface)
+        self.displayTh     = Display.Display()
+        self.dataTh        = Data.DataIn(self._MCUInterface)
+        self.waveformTh    = WaveGen.WaveGen(self._MCUInterface)
 
         WaveGen.WaveGen.generateLUT()
-
-        self.disptimer = QTimer()
-        self.disptimer.setInterval(Const.DISP_PERIOD)
-        self.disptimer.timeout.connect(self.displayTh.start)
 
         self.window.startScanning.connect(self.startScans)
         self.window.endScanning.connect(self.endScans)
@@ -61,18 +60,20 @@ class Master(QObject):
 
     # Sends Display's image to GUI
     def relayImage(self, image):
-        print("Relaying Image")
+        #print("Main: Relaying Image")
         self.sendImage.emit(image)
         return
 
     # Connects GUI's startScanning to running of display and data
     def startScans(self):
-        self.disptimer.start()
+        print("Main: Starting Scans")
+        self.displayTh.start()
         self.dataTh.start()
 
     # Connects GUI's endScanning to stopping of display and data
     def endScans(self):
-        self.disptimer.stop()
+        print("Main: Halting Scans")
+        self.displayTh.stop()
         self.dataTh.stop()
 
 
