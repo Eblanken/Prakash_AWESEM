@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QGraphicsView" name="Graphic_ScopeView">
+   <widget class="QGraphicsView" name="ScopeView_Graphic">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -24,77 +24,63 @@
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="Button_Vertical_Update">
-    <property name="geometry">
-     <rect>
-      <x>530</x>
-      <y>160</y>
-      <width>113</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update</string>
-    </property>
-   </widget>
-   <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Amplitude">
+   <widget class="QDoubleSpinBox" name="Vertical_Amplitude_Spinbox">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>100</y>
+      <y>80</y>
       <width>111</width>
       <height>24</height>
      </rect>
     </property>
    </widget>
-   <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Frequency">
+   <widget class="QDoubleSpinBox" name="Vertical_Frequency_Spinbox">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>130</y>
+      <y>110</y>
       <width>111</width>
       <height>24</height>
      </rect>
     </property>
    </widget>
-   <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Frequency_2">
+   <widget class="QDoubleSpinBox" name="Horizontal_Frequency_Spinbox">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>360</y>
+      <y>240</y>
       <width>111</width>
       <height>24</height>
      </rect>
     </property>
+    <property name="maximum">
+     <double>3.300000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
    </widget>
-   <widget class="QPushButton" name="Button_Horizontal_Update">
+   <widget class="QDoubleSpinBox" name="Horizontal_Amplitude_Spinbox">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>390</y>
-      <width>113</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update</string>
-    </property>
-   </widget>
-   <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Amplitude_2">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>330</y>
+      <y>210</y>
       <width>111</width>
       <height>24</height>
      </rect>
     </property>
+    <property name="maximum">
+     <double>3.300000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.100000000000000</double>
+    </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="Horizontal_Title_Label">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>270</y>
+      <x>540</x>
+      <y>150</y>
       <width>181</width>
       <height>31</height>
      </rect>
@@ -108,11 +94,11 @@
      <string>Horizontal Axis</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="Vertical_Title_Label">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>30</y>
+      <y>20</y>
       <width>171</width>
       <height>31</height>
      </rect>
@@ -126,24 +112,24 @@
      <string>Vertical Axis</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_3">
+   <widget class="QLabel" name="Horizontal_Amplitude_Label">
     <property name="geometry">
      <rect>
-      <x>670</x>
-      <y>330</y>
-      <width>91</width>
+      <x>660</x>
+      <y>210</y>
+      <width>111</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Amplitude (V)</string>
+     <string>Amplitude (Vpp)</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="Horizontal_Frequency_Label">
     <property name="geometry">
      <rect>
-      <x>670</x>
-      <y>360</y>
+      <x>660</x>
+      <y>240</y>
       <width>101</width>
       <height>21</height>
      </rect>
@@ -152,96 +138,74 @@
      <string>Frequency (Hz)</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="Button_UpdateAll">
+   <widget class="QComboBox" name="Vertical_Type_Combobox">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>430</y>
-      <width>221</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update All</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Horizontal_Reset">
-    <property name="geometry">
-     <rect>
-      <x>650</x>
-      <y>390</y>
-      <width>111</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reset</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Vertical_Reset">
-    <property name="geometry">
-     <rect>
-      <x>650</x>
-      <y>160</y>
-      <width>111</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reset</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Pause">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>460</y>
-      <width>221</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Pause</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="Combobox_Vertical_Type">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>70</y>
+      <y>50</y>
       <width>221</width>
       <height>31</height>
      </rect>
     </property>
+    <item>
+     <property name="text">
+      <string>Sine</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Triangle</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Sawtooth</string>
+     </property>
+    </item>
    </widget>
-   <widget class="QComboBox" name="Combobox_Horizontal_Type">
+   <widget class="QComboBox" name="Horizontal_Type_Combobox">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>300</y>
-      <width>211</width>
+      <x>540</x>
+      <y>180</y>
+      <width>221</width>
       <height>31</height>
      </rect>
     </property>
+    <item>
+     <property name="text">
+      <string>Sine</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Triangle</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Sawtooth</string>
+     </property>
+    </item>
    </widget>
-   <widget class="QLabel" name="label_5">
+   <widget class="QLabel" name="Vertical_Amplitude_Label">
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>100</y>
-      <width>91</width>
+      <y>80</y>
+      <width>101</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Amplitude (V)</string>
+     <string>Amplitude (Vpp)</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
+   <widget class="QLabel" name="Vertical_Frequency_Label">
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>130</y>
+      <y>110</y>
       <width>101</width>
       <height>21</height>
      </rect>
@@ -250,17 +214,93 @@
      <string>Frequency (Hz)</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="Save_Pushbutton">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>500</y>
+      <y>510</y>
       <width>131</width>
       <height>32</height>
      </rect>
     </property>
     <property name="text">
      <string>Save Image</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="Sampling_Title_Label">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>270</y>
+      <width>181</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>24</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Sampling</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="Sampling_Frequency_Spinbox">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>310</y>
+      <width>111</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <double>50.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>20.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QLabel" name="Sampling_Frequency_Label_2">
+    <property name="geometry">
+     <rect>
+      <x>660</x>
+      <y>310</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Frequency (kHz)</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="Sampling_Averages_Label">
+    <property name="geometry">
+     <rect>
+      <x>660</x>
+      <y>340</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Averages</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="Sampling_Averages_Spinbox">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>340</y>
+      <width>111</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <double>50.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>20.000000000000000</double>
     </property>
    </widget>
   </widget>

@@ -24,19 +24,6 @@
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="Button_Vertical_Update">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>170</y>
-      <width>113</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update</string>
-    </property>
-   </widget>
    <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Amplitude">
     <property name="geometry">
      <rect>
@@ -61,40 +48,27 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>320</y>
+      <y>260</y>
       <width>111</width>
       <height>24</height>
      </rect>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Horizontal_Update">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>360</y>
-      <width>113</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update</string>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="Spinbox_Vertical_Amplitude_2">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>290</y>
+      <y>230</y>
       <width>111</width>
       <height>24</height>
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="Label_Horizontal_Title">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>220</y>
+      <x>540</x>
+      <y>170</y>
       <width>181</width>
       <height>31</height>
      </rect>
@@ -108,7 +82,7 @@
      <string>Horizontal Axis</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="Label_Vertical_Title">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -126,82 +100,30 @@
      <string>Vertical Axis</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_3">
+   <widget class="QLabel" name="Label_Horizontal_Amplitude">
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>290</y>
-      <width>91</width>
+      <y>230</y>
+      <width>111</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Amplitude (V)</string>
+     <string>Amplitude (Vpp)</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="Label_Horizontal_Frequency">
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>320</y>
+      <y>260</y>
       <width>101</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>Frequency (Hz)</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_UpdateAll">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>430</y>
-      <width>221</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Update All</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Horizontal_Reset">
-    <property name="geometry">
-     <rect>
-      <x>650</x>
-      <y>360</y>
-      <width>111</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reset</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Vertical_Reset">
-    <property name="geometry">
-     <rect>
-      <x>650</x>
-      <y>170</y>
-      <width>111</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reset</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="Button_Pause">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>460</y>
-      <width>221</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Pause</string>
     </property>
    </widget>
    <widget class="QComboBox" name="Combobox_Vertical_Type">
@@ -213,31 +135,61 @@
       <height>31</height>
      </rect>
     </property>
+    <item>
+     <property name="text">
+      <string>Sine</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Triangle</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Sawtooth</string>
+     </property>
+    </item>
    </widget>
    <widget class="QComboBox" name="Combobox_Horizontal_Type">
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>260</y>
+      <y>200</y>
       <width>221</width>
       <height>31</height>
      </rect>
     </property>
+    <item>
+     <property name="text">
+      <string>Sine</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Triangle</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Sawtooth</string>
+     </property>
+    </item>
    </widget>
-   <widget class="QLabel" name="label_5">
+   <widget class="QLabel" name="Label_Vertical_Amplitude">
     <property name="geometry">
      <rect>
       <x>660</x>
       <y>100</y>
-      <width>91</width>
+      <width>101</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Amplitude (V)</string>
+     <string>Amplitude (Vpp)</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
+   <widget class="QLabel" name="Label_Vertical_Frequency">
     <property name="geometry">
      <rect>
       <x>660</x>
@@ -250,7 +202,7 @@
      <string>Frequency (Hz)</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="PushButton_Save">
     <property name="geometry">
      <rect>
       <x>10</x>
