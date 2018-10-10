@@ -31,7 +31,7 @@ class DataIn:
 
     def sample(self):
         self._SampleTimer = pyth.Timer(Const.DISPLAY_POLLPERIOD, self.sample)
-        self._SampleTimer.start() # TODO code stink here
+        self._SampleTimer.start() # TODO code stink here, why do new samples need to create new instances of themselves?
         value = self._MCUInterface.getDataBuffer()
         if value is not None:
             sampleData.append(value) # TODO numpy may have methods? Faster to enqueue all rows or to enqueue blocks

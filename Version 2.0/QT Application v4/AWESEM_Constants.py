@@ -21,19 +21,16 @@ pi = 3.1415926535
 mill = 1000000
 
 # Size of scan area
-defw = 400
-defh = 400
-
-# Background Image
-IMG = QImage('grid.png')
+RES_W = 400
+RES_H = 400
 
 # Defaults
-XHz = 50  # Hertz
-YHz = 0.05
-XMag = 1.65 # Magnitude in volts
-YMag = 1.65
-XWave = 3 # Waveform: 0 = Sine, 1 = Sawtooth, 3 = Triangle
-YWave = 3
+DEFAULT_XHZ   = 50  # Hertz
+DEFAULT_YHZ   = 0.05
+DEFAULT_XMAG  = 1.65 # Magnitude in volts
+DEFAULT_YMAG  = 1.65
+DEFAULT_XWAVE = 3 # Waveform: 0 = Sine, 1 = Sawtooth, 3 = Triangle
+DEFAULT_YWAVE = 3
 
 # Resolution of generated waveform LUT
 waveRes = 1000
@@ -45,5 +42,5 @@ DISP_PERIOD         = 1000 #?
 # Data Thread Stats
 ADC_BUFFERSIZE      = 1024  # NOTE: Check the PiPion firmware before changing this.
 ADC_SAMPLEFREQUENCY = 14000 # Hertz, frequency of ADC sampling.
-ADC_POLLPERIOD   = 1.0 / float(ADC_SAMPLEFREQUENCY/ADC_BUFFERSIZE) * 0.9
-DISPLAY_POLLPERIOD = ADC_POLLPERIOD * 0.9
+ADC_POLLPERIOD      = 1.0 / float(ADC_SAMPLEFREQUENCY/ADC_BUFFERSIZE)
+DISPLAY_POLLPERIOD  = ADC_POLLPERIOD
