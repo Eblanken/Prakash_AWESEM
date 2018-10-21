@@ -25,12 +25,12 @@ RES_W = 400
 RES_H = 400
 
 # Defaults
-DEFAULT_XHZ   = 50  # Hertz
-DEFAULT_YHZ   = 0.05
-DEFAULT_XMAG  = 1.65 # Magnitude in volts
-DEFAULT_YMAG  = 1.65
-DEFAULT_XWAVE = 3 # Waveform: 0 = Sine, 1 = Sawtooth, 3 = Triangle
-DEFAULT_YWAVE = 3
+DEFAULT_VERTHZ   = 50  # Hertz
+DEFAULT_HORZHZ   = 0.05
+DEFAULT_VERTAM  = 1.65 # Magnitude in volts
+DEFAULT_HORZAM  = 1.65
+#DEFAULT_VERTWV  = 3 # Waveform: 0 = Sine, 1 = Sawtooth, 3 = Triangle TODO no direct correspondance to combobox to waveform type on teensy
+#DEFAULT_HORZWV  = 3
 
 # Resolution of generated waveform LUT
 waveRes = 1000
@@ -40,7 +40,7 @@ PIX_PER_UPDATE      = 25000
 DISP_PERIOD         = 1000 #?
 
 # Data Thread Stats
-ADC_BUFFERSIZE      = 1024  # NOTE: Check the PiPion firmware before changing this.
-ADC_SAMPLEFREQUENCY = 14000 # Hertz, frequency of ADC sampling.
-ADC_POLLPERIOD      = 1.0 / float(ADC_SAMPLEFREQUENCY/ADC_BUFFERSIZE)
-DISPLAY_POLLPERIOD  = ADC_POLLPERIOD
+ADC_BUFFERSIZE              = 1024  # NOTE: Check the PiPion firmware before changing this.
+DEFAULT_ADC_SAMPLEFREQUENCY = 14.0 # KHz, frequency of ADC sampling.
+DEFAULT_ADC_POLLPERIOD      = 1.0 / float((ADC_SAMPLEFREQUENCY * 1000.0)/ADC_BUFFERSIZE)
+DEFAULT_DISPLAY_POLLPERIOD  = ADC_POLLPERIOD

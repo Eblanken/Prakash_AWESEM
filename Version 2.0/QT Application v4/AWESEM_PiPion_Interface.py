@@ -188,7 +188,7 @@ class AWESEM_PiPion_Interface:
     #   Returns the frequency in hertz that the ADC samples at.
     #
     # Returns:
-    #   Returns the ADC frequency in hertz.
+    #   Returns the ADC frequency in hertz as a float.
     #
     def getAdcFrequency(self):
         if self._currentlyConnected:
