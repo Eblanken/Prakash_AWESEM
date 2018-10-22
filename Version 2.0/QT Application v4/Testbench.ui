@@ -309,7 +309,7 @@
      <string>Start Scanning</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="Horizontal_LUT_Combobox">
+   <widget class="QComboBox" name="Sampling_LUT_Combobox">
     <property name="geometry">
      <rect>
       <x>540</x>

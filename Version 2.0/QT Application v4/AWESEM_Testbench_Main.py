@@ -202,14 +202,14 @@ class TestBench(QMainWindow, Ui_MainWindow):
     # Desription:
     #   Updates the lookup methods and modes used for
     #   interpreting sampled data.
-    #
+    #   
     def setSamplingReconstruction(self):
         xLambda = None
         yLambda = None
         xPhase  = self.Sampling_Phase_Horizontal_Spinbox.getValue()
         yPhase  = self.Sampling_Phase_Vertical_Spinbox.getValue()
-        xFrequency = self.Horizontal_Frequency_Spinbox.value() * 1000.0
-        yFrequency = self.Vertical_Frequency_Spinbox.value() * 1000.0
+        xFrequency = self.Horizontal_Frequency_Spinbox.value() * 1000.0 # Spinbox is hz
+        yFrequency = self.Vertical_Frequency_Spinbox.value() * 1000.0   # Spinbox is hz
         
         currentLUTMode = self.Sampling_LUT_Combobox.currentText()
         if(currentLUTMode = "Linear"):
