@@ -377,8 +377,8 @@
    <widget class="QTextEdit" name="Console_Output_TextBox">
     <property name="geometry">
      <rect>
-      <x>540</x>
-      <y>450</y>
+      <x>530</x>
+      <y>460</y>
       <width>231</width>
       <height>41</height>
      </rect>
@@ -431,8 +431,8 @@
    <widget class="QLabel" name="Plotter_Label">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
+      <x>0</x>
+      <y>0</y>
       <width>511</width>
       <height>491</height>
      </rect>
