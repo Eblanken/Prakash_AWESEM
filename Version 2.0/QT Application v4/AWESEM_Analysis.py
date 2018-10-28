@@ -51,41 +51,37 @@ import numpy as np
 #
 # Description
 #   Returns the value of a sine function for the given parameters, 
-#   migrated from WaveGen. Ranges from [baseOffset, baseOffset + amplitude].
+#   migrated from WaveGen. Ranges from [0, 1.0].
 #
 # Parameters:
 #   'inputTime' The time to evaluate in seconds
-#   'amplitude' Amplitude of the sine output
 #   'frequency' Frequency of the sine in hz
 #   'phase'     Phase of the sine wave as a percentage of 2pi
 #
-def sine(inputTime, amplitude, frequency, phase, baseOffset):
-    return amplitude * np.sin((inputTime - phase) * frequency * 2.0 * np.pi) + baseOffset
+def sine(inputTime, frequency, phase, baseOffset):
+    return np.sin((inputTime - phase) * frequency * 2.0 * np.pi) + baseOffset
 #
 # Description
 #   Returns the value of a triangle function for the given parameters, 
-#   migrated from WaveGen. Ranges from [baseOffset, baseOffset + amplitude].
+#   migrated from WaveGen. Ranges from [0, 1.0].
 #
 # Parameters:
 #   'inputTime' The time to evaluate in seconds
-#   'amplitude' Amplitude of the triangle output
 #   'frequency' Frequency of the triangle wave in hz
 #   'phase'     Phase of the the triangle wave as a percentage of the 
 #
-def triangle(inputTime, amplitude, frequency, phase, baseOffset):
-    return (amplitude / 2.0) * (np.arcsin(np.cos((inputTime - phase) * frequency * 2.0 * np.pi)) + np.pi / 2.0) + baseOffset
+def triangle(inputTime, frequency, phase, baseOffset):
+    return (1 / 2.0) * (np.arcsin(np.cos((inputTime - phase) * frequency * 2.0 * np.pi)) + np.pi / 2.0)
     
 #
 # Description
 #   Returns the value of a sawTooth function for the given parameters, 
-#   migrated from WaveGen. Ranges from [baseOffset, baseOffset + amplitude]
+#   migrated from WaveGen. Ranges from [0, 1.0]
 #
 # Parameters:
 #   'inputTime'  The time to evaluate in seconds
-#   'amplitude'  Amplitude of the sawTooth output
 #   'frequency'  Frequency of the sawTooth wave in hz
 #   'phase'      Phase delay of the function as a fraction of the full period
-#   'baseOffset' Added constant
 #
-def sawTooth(inputTime, amplitude, frequency, phase, baseOffset):
-    return (amplitude * np.mod((inputTime - phase / frequency), 1.0/frequency) * frequency) + baseOffset
+def sawTooth(inputTime, frequency, phase):
+    return (np.mod((inputTime - phase / frequency), 1.0/frequency) * frequency)

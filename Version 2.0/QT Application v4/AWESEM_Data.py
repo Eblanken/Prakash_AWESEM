@@ -9,73 +9,56 @@
 #   This class houses a python timer thread (NOT QThread).
 #   When called periodically it "polls" data points with
 #   timestamps and adds them to the data queue to be
-#   processed by the display thread. 
+#   processed by the display thread.
+#
+#   Polling based off of: https://stackoverflow.com/a/28034554
+#
+# TODO:
+#   Need to check threads behavior on a single core processor
 #
 # Edits:
-#  - Erick Blankenberg, Adapted to use teensy 3.6.
+#  - Erick Blankenberg, Adapted to use teensy 3.6, used new polling.
 #
 
-import threading               as     pyth
+import time
+import mpipe
+import threading
 from   collections             import deque
 from   AWESEM_PiPion_Interface import AWESEM_PiPion_Interface
 import AWESEM_Constants        as     Const
 
-class DataIn:
-    
-    __SampleTimer  = None
-    __SampleBuffer = deque(maxlen=250500)
+class DataIn(threading.Thread):
+    __PipeOut      = None
     __PollPeriod   = None
     __MCUInterface = None
-    
-    def __init__(self, MCUInterface, OutputPointsQueue):
+    __DoSample     = False
+
+    def __init__(self, MCUInterface, PipeOut):
+        threading.Thread.__init__(self)
         self.__MCUInterface = MCUInterface
-    
-    def getQueueLength(self):
-        return len(self.__SampleBuffer)
-    
-    def getQueuePop(self):
-        return self.__SampleBuffer.pop()
-    
-    def setInputMCUInterface(self, newMCUInterface):
-        if isinstance(newMCUInterface, AWESEM_PiPion_Interface):
-            self.__MCUInterface = newMCUInterface
-            return True
-        return False
-    
+        self.__PipeOut      = PipeOut
+
     def setPollFrequency(self, newPollFrequency):
         self.__PollPeriod = 1.0 / float(newPollFrequency)
-        return True    
-    
-    def sample(self):
-        self.__SampleTimer = pyth.Timer(self.__PollPeriod, self.sample)
-        self.__SampleTimer.start() # TODO code stink here, why do new samples need to create new instances of the sample timer?
-        value = self.__MCUInterface.getDataBuffer()
-        if value is not None:
-            self.__SampleBuffer.append(value) # TODO numpy may have methods? Faster to enqueue all rows or to enqueue blocks
-        #print("Data: Buffer size: %d" % len(sampleData))
-        
-    def start(self):
-        if(self._checkReady):
-            print("Data: Started")
-            self._SampleTimer = pyth.Timer(self.__PollPeriod, self.sample)
-            self._SampleTimer.start()
-            self._MCUInterface.beginEvents()
-
-    def stop(self):
-        print("Data: Stopped")
-        self._SampleTimer.cancel()
-        self._MCUInterface.pauseEvents()
-        
-    def _checkReady(self):
-        if not isinstance(self.__MCUInterface, AWESEM_PiPion_Interface):
-            print("ERROR: Data: MCU Interface not valid")
-            return False
-        elif not isinstance(self.__PollPeriod, float):
-            print("ERROR: Data: Frequency is invalid")
-            return False
-        elif not self.__MCUInterface.ping():
-            print("ERROR: Data: MCU not responding")
-            return False
         return True
-            
-        
+
+    def run(self):
+        def g_tick():
+            count = 0
+            while True:
+                count += 1
+                yield max(t + count * self.__PollPeriod - time.time(), 0)
+        while True: # Feels bad, better than threading maybe?
+            if self.__DoSample:
+                print(time.time())
+                time.sleep(g.next())
+                # As per MPipe's docs, if you return None that shuts down the pipeline, dont do this
+                value = self.__MCUInterface.getDataBuffer()
+                if value is not None and self.__PipeOut is not None:
+                    self.__PipeOut.put(value)
+
+    def begin(self):
+        self.__DoSample = True
+
+    def end(self):
+        self.__DoSample = False

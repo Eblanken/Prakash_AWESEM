@@ -5,25 +5,18 @@
 # Date: 10/10/2018
 #
 # Description:
-#   This QThread is called periodically from the main.
-#   When called it takes some number of samples from the
-#   queue of intensity values in Data.py and plots them
-#   onto the class's current scan image.
-#   Once some number of data points have been processed
-#   the thread will update the image label in the main GUI.
+#   This thread continuously assigns intensity data acquired from the
+#   teensy to the display.
 #
 # Edits:
-#  - Erick Blankenberg, adapted to use teensy 3.6, moved temp image here.
+#  - Erick Blankenberg, adapted to use teensy 3.6, moved temp image here. Switched to mpipe
 #
 
-import threading        as pyth
+import mpipe
 from   math             import ceil
-from   PyQt5.QtGui      import *
-from   PyQt5.QtCore     import *
 import numpy            as np
 import AWESEM_Constants as Const
 import AWESEM_Data      as Data
-from   AWESEM_WaveGen   import WaveGen
 from   time             import perf_counter
 
 #
@@ -32,80 +25,25 @@ from   time             import perf_counter
 #
 #
 #
-class Display(QThread):
-    # Monitor output
-    __DataQueue        = None
-    __ScanPixmap       = None
-    __LoadTimer        = None
-    __ScanMonitorLabel = None
-    __ColorsLUT        = []
+class Display(mpipe.OrderedWorker):
     # Data processing
     __DataTranslateX   = None
     __DataTranslateY   = None
-    __TempPointsDict   = dict() # Format is (x, y):[sumElems, numElems]
+    __TempPointsDict   = dict()
 
-    def __init__(self, InputDataSource, OutputViewLabel):
-        super().__init__()
-        self.__ScanMonitorLabel = OutputViewLabel
-        self.__InputDataSource  = InputDataSource
-        self.__ScanPixmap       = QPixmap(Const.RES_W, Const.RES_H) # Actual monitor may be larger  
-        self.__LoadTimer        = pyth.Timer(Const.ADC_POLLPERIOD, self.run)
-        for i in range(257):
-            self.ColorsLUT.append(QColor(i, i, i, 255))
-
-    # Each time the thread is run, it plots all available data
-    def load(self):
-        self._LoadTimer = pyth.Timer(Const.ADC_POLLPERIOD, self.load)
-        self._LoadTimer.start() # TODO better version where the thread does not need to restart itself?
-        if (self.__InputDataSource.getQueueLength() > 0):
-            #print("Display: Loading %d" % (self.__InputDataSource.getQueueLength()))
-            # Loads bulk data
-            while(self.__InputDataSource.getQueueLength() > 0):
-                try:
-                    valueBlock = self.__InputDataSource.getQueuePop()
-                except:
-                    break
-                np.apply_along_axis(self._logPoints, 1, valueBlock)
-            # Prepares image for display
-            for currentKey in self.TempPointsDict:
-                currentValues = self.TempPointsDict[currentKey]
-                self.scanA.setPixelColor(currentKey[0], currentKey[1], self.ColorsLUT[int(ceil(currentValues[0] / currentValues[1]))])
-            self.TempPointsDict.clear()
-            self.__ScanMonitorLabel.setPixMap(self.__ScanPixmap.scaled(self.__ScanMonitorLabel.width(), self.__ScanMonitorLabel.height()))
-            #print("Display: Updated display")
-        #else:
-            #print("Display: No Data")
-    
+    # 
+    # As per the mpipe interfacem doTask runs whenever the stage has data to
+    # distribute.
     #
-    # Desccription:
-    #   Sets the function used to translate the data times to position
-    #   along the X axis.
-    #
-    # Parameters:
-    #   'translationFunction' Function that takes in a floating point time in seconds
-    #                         and returns an integer pixel position.
-    #
-    def setDataTranslateX(self, translationFunction):
-        if(callable(translationFunction)):
-            self.__DataTranslateX = translationFunction
-            return True
-        return False
-    #
-    # Desccription:
-    #   Sets the function used to translate the data times to position
-    #   along the Y axis.
-    #
-    # Parameters:
-    #   'translationFunction' Function that takes in a floating point time in seconds
-    #                         and returns an integer pixel position.
-    #
-    def setDataTranslateY(self, translationFunction):
-       if(callable(translationFunction)):
-            self.__DataTranslateY = translationFunction
-            return True
-        return False
-    
-    #
+    def doTask(task):
+        assignedPositionVals = numpy.stack((self.__DataTranslateX(task[:, 0]), self.__DataTranslateY(task[:, 1]), task[:, 2]), 1)
+        np.apply_along_axis(self._collapseDuplicates, 1, valueBlock)
+        # Prepares image for display
+        for currentKey in self.TempPointsDict:
+            currentValues = self.TempPointsDict[currentKey]
+        self.scanA.setPixelColor(currentKey[0], currentKey[1], self.ColorsLUT[int(ceil(currentValues[0] / currentValues[1]))])
+        self.TempPointsDict.clear()
+            #
     # Description:
     #   Takes in data point of the format [(xTime), (yTime), (value)] and logs
     #   this data point to the corresponding location in an image 
@@ -127,26 +65,33 @@ class Display(QThread):
             newVals[0] += oldVals[0]
             newVals[1] += oldVals[1]
         self.TempPointsDict[(plotx, ploty)] = newVals
+    
+    #
+    # Desccription:
+    #   Sets the function used to translate the data times to position
+    #   along the X axis.
+    #
+    # Parameters:
+    #   'translationFunction' Function that takes in a floating point time in seconds
+    #                         and returns a floating point normalized value, 1.0 is maximum.
+    #
+    def setDataTranslateX(self, translationFunction):
+        if(callable(translationFunction)):
+            self.__DataTranslateX = translationFunction
+            return True
+        return False
+    #
+    # Desccription:
+    #   Sets the function used to translate the data times to position
+    #   along the Y axis.
+    #
+    # Parameters:
+    #   'translationFunction' Function that takes in a floating point time in seconds
+    #                         and returns a floating point normalized value, 1.0 is maximum.
+    #
+    def setDataTranslateY(self, translationFunction):
+        if(callable(translationFunction)):
+            self.__DataTranslateY = translationFunction
+            return True
+        return False
             
-    # Description
-    def start(self):
-        if(self._checkReady()):
-            print("Display: Started")
-            self._LoadTimer = pyth.Timer(Const.ADC_POLLPERIOD, self.load)
-            self._LoadTimer.start()
-
-    def stop(self):
-        print("Display: Stopped")
-        self._LoadTimer.cancel()
-        
-    def _checkReady(): # TODO FROM HERE
-        if not isinstance(self.__MCUInterface, AWESEM_PiPion_Interface):
-            print("ERROR: Data: MCU Interface not valid")
-            return False
-        elif not isinstance(self.__PollPeriod, float):
-            print("ERROR: Data: Frequency is invalid")
-            return False
-        elif not self.__MCUInterface.ping():
-            print("ERROR: Data: MCU not responding")
-            return False
-        return True

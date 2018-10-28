@@ -15,6 +15,11 @@
 # Note:
 #   See the AWESEM_PiPion.ino file for command details and a comprehensive list.
 #
+# TODO:
+#   - Seems like the scrolling message box does not update until a user interacts with it
+#   - Annoying to have the PiPion react to partially completed values, maybe add
+#     "apply" button or wait for return keystroke.
+#   - Initial startup seems confused, start and stop scans is switched
 
 # ----------------------- Imported Libraries ------------------------------------
 
@@ -28,12 +33,28 @@ from serial.tools import list_ports
 
 class AWESEM_PiPion_Interface:
 
+    # Variables
+    _verbose = True # Debugging
+    _currentlyConnected = False
+    _currentlyScanning  = False
+    _serialPort = None # Object for serial communication
+
+    # Constants
+    _SERIAL_RECONNECTIONATTEMPTS = 1 # Number of times to try all ports once.
+    _SERIAL_TIMEOUT = 0.1 # Timeout in seconds
+    _SERIAL_DATASTRUCT_BUFFERSIZE = 1024 # Make sure that this is the same as specified in the MCU code
+
     # -------------------- Public Members ---------------
 
     # Initializes communications over serial to the PiPion
     def __init__(self):
         self.reconnectToPion()
         self._lastBlock = 0 # Tracks buffer count
+        self.pauseEvents()  # Not trusting default state of PiPion
+
+    # Safely closes the connection
+    def __del__(self):
+        self.close()
 
     # Prints information for debugging
     def setVerbose(self, enableVerbose):
@@ -52,6 +73,9 @@ class AWESEM_PiPion_Interface:
     # Safely closes the connection to the PiPion.
     def close(self):
         self._serialPort.close()
+
+    def isScanning(self):
+        return self._currentlyScanning
 
     #
     # Description:
@@ -141,7 +165,7 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<cbf', b'M', dacChannel, dacMagnitude))
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
-        
+
     #
     # Description:
     #   Returns the waveform assigned to the given dac channel.
@@ -163,7 +187,7 @@ class AWESEM_PiPion_Interface:
         elif self._verbose:
             print("Error: AWSEM_getDacWaveform, unit disconnected")
         return None
-    
+
     #
     # Description:
     #   Sets the waveform associated with the given dac channel.
@@ -182,7 +206,7 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<cbb', b'W', dacChannel, dacWaveform))
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
-        
+
     #
     # Description:
     #   Returns the frequency in hertz that the ADC samples at.
@@ -195,7 +219,7 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<c', b's'))
             return struct.unpack('<f', self._readBytes(4))
         return None
-    
+
     #
     # Description:
     #   Sets the frequency of ADC sampling in hertz.
@@ -212,7 +236,7 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<cf', b'S', adcFrequency))
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
-    
+
     #
     # Description:
     #   Sets the number of averaged samples per ADC result.
@@ -232,7 +256,7 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<cb', b'U', adcAverages))
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
-    
+
     #
     # Description:
     #   Returns the number of averages per ADC result, none
@@ -247,13 +271,13 @@ class AWESEM_PiPion_Interface:
             self._sendBytes(struct.pack('<c', b'u'))
             return struct.unpack('<b')
         return None
-        
+
     #
     # Description:
     #   Acquires a data buffer from the MCU.
     #
     # Returns:
-    #   Returns an array of the form [byte values, dac 0 offset in uS, dac 1 offset in uS]
+    #   Returns an array of the form [dac 0 offset in uS, dac 1 offset in uS, byteValues]
     #
     def getDataBuffer(self):
         if self._currentlyConnected:
@@ -268,7 +292,7 @@ class AWESEM_PiPion_Interface:
                 duration = (struct.unpack('<I', self._readBytes(4)))[0]
                 byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
                 byteArray = numpy.frombuffer(byteList, numpy.uint8)
-                value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors 
+                value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
                 return value
             elif self._verbose:
                 print("Error: AWSEM_getDataBuffer, no buffer ready")
@@ -285,6 +309,7 @@ class AWESEM_PiPion_Interface:
         if self._currentlyConnected:
             outMessage = struct.pack('<c', b'B')
             self._sendBytes(outMessage)
+            self._currentlyScanning = True
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
     #
@@ -296,6 +321,7 @@ class AWESEM_PiPion_Interface:
         if self._currentlyConnected:
             outMessage = struct.pack('<c', b'H')
             self._sendBytes(outMessage)
+            self._currentlyScanning = False
             return struct.unpack('<c', self._readBytes(1)) == b'A'
         return False
 
@@ -337,13 +363,3 @@ class AWESEM_PiPion_Interface:
         if self._verbose:
             print('No serial ports found for the PiPion.')
         return False
-
-    # Variables
-    _verbose = True # Debugging
-    _currentlyConnected = False
-    _serialPort = None # Object for serial communication
-
-    # Constants
-    _SERIAL_RECONNECTIONATTEMPTS = 1 # Number of times to try all ports once.
-    _SERIAL_TIMEOUT = 0.1 # Timeout in seconds
-    _SERIAL_DATASTRUCT_BUFFERSIZE = 1024 # Make sure that this is the same as specified in the MCU code

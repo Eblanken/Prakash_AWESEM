@@ -448,11 +448,11 @@ void loop() {
       case 'S': // Sets sampling frequency in hertz
         parseSetSFrequency();
         break;
-      case 'u':
-        parseGetSAverages(); // Gets number of averages per adc result
+      case 'u': // Gets number of averages per adc result
+        parseGetSAverages();
         break;
-      case 'U':
-        parseSetSAverages(); // Sets number of averages per adc result
+      case 'U': // Sets number of averages per adc result
+        parseSetSAverages(); 
         break;
       case 'A': // Acquires current buffer
         parseGetBuffer();

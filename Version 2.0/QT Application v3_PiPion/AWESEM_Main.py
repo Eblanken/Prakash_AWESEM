@@ -5,7 +5,7 @@
 # Date:
 #
 # Description:
-#   This class starts the application and ties 
+#   This class starts the application and ties
 #   everything together.
 #
 #   To successfully run this application
