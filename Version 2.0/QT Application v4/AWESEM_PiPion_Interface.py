@@ -16,13 +16,11 @@
 #   See the AWESEM_PiPion.ino file for command details and a comprehensive list.
 #
 # TODO:
-#   - Seems like the scrolling message box does not update until a user interacts with it
-#   - Annoying to have the PiPion react to partially completed values, maybe add
-#     "apply" button or wait for return keystroke.
-#   - Initial startup seems confused, start and stop scans is switched
+#   - Connection validation and updating is bad, revisit this module
 
 # ----------------------- Imported Libraries ------------------------------------
 
+from   threading import Lock
 import struct
 import serial
 import numpy
@@ -38,6 +36,8 @@ class AWESEM_PiPion_Interface:
     _currentlyConnected = False
     _currentlyScanning  = False
     _serialPort = None # Object for serial communication
+    _lastPacketID = 0 # How many sample packets have been recieved
+    _guardLock    = Lock() # Had crashes when attempting to set parameters during reads
 
     # Constants
     _SERIAL_RECONNECTIONATTEMPTS = 1 # Number of times to try all ports once.
@@ -54,6 +54,7 @@ class AWESEM_PiPion_Interface:
 
     # Safely closes the connection
     def __del__(self):
+        self.pauseEvents()
         self.close()
 
     # Prints information for debugging
@@ -99,15 +100,16 @@ class AWESEM_PiPion_Interface:
     #   Floating point voltage.
     #
     def getDacFrequency(self, dacChannel):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cb', b'f', dacChannel))
-            if self._readBytes(1) == b'A':
-                return struct.unpack('<f', self._readBytes(4))
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cb', b'f', dacChannel))
+                if self._readBytes(1) == b'A':
+                    return struct.unpack('<f', self._readBytes(4))
+                elif self._verbose:
+                    print("Error: AWSEM_getDacFrequency, ackowledgement failure")
             elif self._verbose:
-                print("Error: AWSEM_getDacFrequency, ackowledgement failure")
-        elif self._verbose:
-            print("Error: AWSEM_getDacFrequency, unit disconnected")
-        return None
+                print("Error: AWSEM_getDacFrequency, unit disconnected")
+            return None
 
     #
     # Description:
@@ -124,10 +126,11 @@ class AWESEM_PiPion_Interface:
     #   the beginEvents() and pauseEvents() commands are called.
     #
     def setDacFrequency(self, dacChannel, dacFrequency):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cbf', b'F', dacChannel, dacFrequency))
-            return self._readBytes(1) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cbf', b'F', dacChannel, dacFrequency))
+                return self._readBytes(1) == b'A'
+            return False
 
     #
     # Description:
@@ -137,15 +140,16 @@ class AWESEM_PiPion_Interface:
     #   'dacChannel' The target channel, either 1 or 0.
     #
     def getDacMagnitude(self, dacChannel):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cb', b'm', dacChannel))
-            if self._readBytes(1) == b'A':
-                return struct.unpack('<f', self._readBytes(4))
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cb', b'm', dacChannel))
+                if self._readBytes(1) == b'A':
+                    return struct.unpack('<f', self._readBytes(4))
+                elif self._verbose:
+                    print("Error: AWSEM_getDacMagnitude, ackowledgement failure")
             elif self._verbose:
-                print("Error: AWSEM_getDacMagnitude, ackowledgement failure")
-        elif self._verbose:
-            print("Error: AWSEM_getDacMagnitude, unit disconnected")
-        return None
+                print("Error: AWSEM_getDacMagnitude, unit disconnected")
+            return None
     #
     # Description:
     #   Sets the magnitude of the DAC waveform in volts
@@ -161,10 +165,11 @@ class AWESEM_PiPion_Interface:
     #   the beginEvents() and pauseEvents() commands are called.
     #
     def setDacMagnitude(self, dacChannel, dacMagnitude):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cbf', b'M', dacChannel, dacMagnitude))
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cbf', b'M', dacChannel, dacMagnitude))
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
 
     #
     # Description:
@@ -178,15 +183,16 @@ class AWESEM_PiPion_Interface:
     #   0 = Sine, 1 = Sawtooth, 3 = Triangle.
     #
     def getDacWaveform(self, dacChannel):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cb', b'w', dacChannel))
-            if self._readBytes(1) == b'A':
-                return struct.unpack('<b', self._readBytes(1))
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cb', b'w', dacChannel))
+                if self._readBytes(1) == b'A':
+                    return struct.unpack('<b', self._readBytes(1))
+                elif self._verbose:
+                    print("Error: AWSEM_getDacWaveform, ackowledgement failure")
             elif self._verbose:
-                print("Error: AWSEM_getDacWaveform, ackowledgement failure")
-        elif self._verbose:
-            print("Error: AWSEM_getDacWaveform, unit disconnected")
-        return None
+                print("Error: AWSEM_getDacWaveform, unit disconnected")
+            return None
 
     #
     # Description:
@@ -202,10 +208,11 @@ class AWESEM_PiPion_Interface:
     #   the beginEvents() and pauseEvents() commands are called.
     #
     def setDacWaveform(self, dacChannel, dacWaveform):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cbb', b'W', dacChannel, dacWaveform))
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cbb', b'W', dacChannel, dacWaveform))
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
 
     #
     # Description:
@@ -215,10 +222,11 @@ class AWESEM_PiPion_Interface:
     #   Returns the ADC frequency in hertz as a float.
     #
     def getAdcFrequency(self):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<c', b's'))
-            return struct.unpack('<f', self._readBytes(4))
-        return None
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<c', b's'))
+                return struct.unpack('<f', self._readBytes(4))
+            return None
 
     #
     # Description:
@@ -232,10 +240,11 @@ class AWESEM_PiPion_Interface:
     #   the beginEvents() and pauseEvents() commands are called.
     #
     def setAdcFrequency(self, adcFrequency):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cf', b'S', adcFrequency))
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cf', b'S', adcFrequency))
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
 
     #
     # Description:
@@ -252,10 +261,11 @@ class AWESEM_PiPion_Interface:
     #   the beginEvents() and pauseEvents() commands are called.
     #
     def setAdcAverages(self, adcAverages):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<cb', b'U', adcAverages))
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<cb', b'U', adcAverages))
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
 
     #
     # Description:
@@ -267,10 +277,11 @@ class AWESEM_PiPion_Interface:
     #   if connected.
     #
     def getAdcAverages(self):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<c', b'u'))
-            return struct.unpack('<b')
-        return None
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<c', b'u'))
+                return struct.unpack('<b')
+            return None
 
     #
     # Description:
@@ -280,50 +291,56 @@ class AWESEM_PiPion_Interface:
     #   Returns an array of the form [dac 0 offset in uS, dac 1 offset in uS, byteValues]
     #
     def getDataBuffer(self):
-        if self._currentlyConnected:
-            self._sendBytes(struct.pack('<c', b'A'))
-            ackResponse = self._readBytes(1)
-            if ackResponse == b'A':
-                currentNumber = struct.unpack('<I', self._readBytes(4))
-                # Result consists of three 32 bit integers and then an
-                # array of bytes.
-                aOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
-                bOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
-                duration = (struct.unpack('<I', self._readBytes(4)))[0]
-                byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
-                byteArray = numpy.frombuffer(byteList, numpy.uint8)
-                value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
-                return value
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<c', b'A'))
+                ackResponse = self._readBytes(1)
+                if ackResponse == b'A':
+                    currentNumber = struct.unpack('<I', self._readBytes(4))
+                    if(currentNumber[0] - self._lastPacketID - 1 > 0):
+                        print("Error, AWESEM_getDataBuffer, missed %d packets", currentNumber[0] - self._lastPacketID - 1)
+                    self._lastPacketID = currentNumber[0]
+                    # Result consists of three 32 bit integers and then an
+                    # array of bytes.
+                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
+                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
+                    duration = (struct.unpack('<I', self._readBytes(4)))[0]
+                    byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
+                    byteArray = numpy.frombuffer(byteList, numpy.uint8)
+                    value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
+                    return value
+                elif self._verbose:
+                    print("Error: AWSEM_getDataBuffer, no buffer ready")
+                    print(ackResponse)
             elif self._verbose:
-                print("Error: AWSEM_getDataBuffer, no buffer ready")
-                print(ackResponse)
-        elif self._verbose:
-            print("Error: AWSEM_getDataBuffer, unit disconnected")
-        return None
+                print("Error: AWSEM_getDataBuffer, unit disconnected")
+            return None
 
     #
     # Description:
     #   Starts sampling and analog driving behavior.
     #
     def beginEvents(self):
-        if self._currentlyConnected:
-            outMessage = struct.pack('<c', b'B')
-            self._sendBytes(outMessage)
-            self._currentlyScanning = True
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                outMessage = struct.pack('<c', b'B')
+                self._sendBytes(outMessage)
+                self._currentlyScanning = True
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
     #
     # Description:
     #   Ends sampling and analog driving behavior,
     #   also updates settings.
     #
     def pauseEvents(self):
-        if self._currentlyConnected:
-            outMessage = struct.pack('<c', b'H')
-            self._sendBytes(outMessage)
-            self._currentlyScanning = False
-            return struct.unpack('<c', self._readBytes(1)) == b'A'
-        return False
+        with self._guardLock:
+            if self._currentlyConnected:
+                outMessage = struct.pack('<c', b'H')
+                self._sendBytes(outMessage)
+                self._currentlyScanning = False
+                return struct.unpack('<c', self._readBytes(1)) == b'A'
+            return False
 
     #------------------- Private Members ---------------
 

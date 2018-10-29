@@ -43,7 +43,8 @@ class Display(mpipe.OrderedWorker):
             currentValues = self.TempPointsDict[currentKey]
         self.scanA.setPixelColor(currentKey[0], currentKey[1], self.ColorsLUT[int(ceil(currentValues[0] / currentValues[1]))])
         self.TempPointsDict.clear()
-            #
+    
+    #
     # Description:
     #   Takes in data point of the format [(xTime), (yTime), (value)] and logs
     #   this data point to the corresponding location in an image 

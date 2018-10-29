@@ -16,6 +16,9 @@
  * Install List:
  *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html
  *  - CircularBuffer: https://github.com/rlogiacco/CircularBuffer#retrieve-data
+ *  
+ * TODO:
+ *  - When events halt, debugging lines should fall
  */
 
 //----------------------------- Command List ----------------------------- 

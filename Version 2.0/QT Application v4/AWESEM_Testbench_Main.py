@@ -18,9 +18,18 @@
 #
 #   Moving Forward:
 #       - Data should be a subclass of mpipe orderedWorker but without an entry point.
-#         It should generate its own data and enter that into the pipe.
+#         It should generate its own data and enter that into the pipe but not read like sphagetti.
 #       - Work on and integrate analysis module.
 #       - Find a framework to make preformance timing easier
+#
+#   TODO:
+#       - Seems like the scrolling message box does not update until a user interacts with it, 
+#         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
+#         for non-developer users.
+#       - Annoying to have the PiPion react to partially completed values, maybe add
+#         "apply" button or wait for return keystroke.
+#       - GUI Scaling is bad on windows, serial is bad on mac (may not be fixable / may be jus my mac, 
+#         Stroffgen has had simililar problems and has not been able to solve)
 #
 
 from   time                          import perf_counter
@@ -83,24 +92,23 @@ class TestBench(QMainWindow):
     __UiElems           = None
     __ScanPixmap        = None
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super(TestBench, self).__init__(*args, **kwargs)
         self.__MCUInterface  = AWESEM_PiPion_Interface()
+
         self.__dataTh        = Data.DataIn(self.__MCUInterface, self.__ProcessingPipe)
         self.__displayTh     = Display.Display()
         self.__consoleOut    = Stream(newText = self.onUpdateText)
 
         # Starts
         self.__dataTh.start()
-
         self.setupTheUi()
         self.setDefaults()
-
-        """
-        displayStage    = mpipe.Stage(self.__displayTh, 1)
-        self.__ProcessingPipe = mpipe.Pipeline(displayStage.link(mpipe.OrderedStage(updateQTImage, 1))) # Recieves input from
-        """
-
+        
+        assignStage    = mpipe.Stage(self.__displayTh, 1)
+        renderStage    = mpipe.OrderedStage(self.updateQTImage, 1) 
+        assignStage.link(renderStage)
+        self.__ProcessingPipe = mpipe.Pipeline(assignStage) # Recieves input from
 
     def __del__(self):
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
@@ -160,7 +168,7 @@ class TestBench(QMainWindow):
         # Console
         self.__UiElems.Console_Preformance_Checkbox.setCheckState(1)
         self.__UiElems.Console_Verbose_Checkbox.setCheckState(1)
-
+        
         # Resets all
         self.setWaveforms()
         self.setSamplingReconstruction()
@@ -203,11 +211,11 @@ class TestBench(QMainWindow):
         if(self.__MCUInterface.isScanning()):
             self.__UiElems.Scan_Pushbutton.setText("Start Scanning")
             self.__MCUInterface.pauseEvents()
-            self.__dataTh.end()
+            self.__dataTh.halt()
         else:
             self.__UiElems.Scan_Pushbutton.setText("Stop Scanning")
             self.__MCUInterface.beginEvents()
-            self.__dataTh.begin()
+            self.__dataTh.commence()
 
     def saveImage(self):
         print("Saving Not Implimented") # TODO Saving
@@ -292,9 +300,9 @@ class TestBench(QMainWindow):
     #
     def setSamplingFrequency(self): # TODO
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz
-        self.__dataTh.setPollFrequency(newFrequency)
+        self.__dataTh.setPollFrequency((newFrequency / Const.ADC_BUFFERSIZE) * 1.5)
         self.__MCUInterface.setAdcFrequency(newFrequency)
-        if(self.__MCUInterface.isScanning):
+        if(self.__MCUInterface.isScanning()):
             self.__MCUInterface.pauseEvents()
             self.__MCUInterface.beginEvents()
 

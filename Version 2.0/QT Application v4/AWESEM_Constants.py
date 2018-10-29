@@ -41,4 +41,4 @@ DISP_PERIOD         = 1000 #?
 
 # Data Thread Stats
 ADC_BUFFERSIZE              = 1024  # NOTE: Check the PiPion firmware before changing this.
-DEFAULT_ADC_SAMPLEFREQUENCY = 14.0 # KHz, frequency of ADC sampling.
+DEFAULT_ADC_SAMPLEFREQUENCY = 24.0 # KHz, frequency of ADC sampling.

@@ -44,21 +44,24 @@ class DataIn(threading.Thread):
 
     def run(self):
         def g_tick():
+            t = time.time()
             count = 0
             while True:
                 count += 1
                 yield max(t + count * self.__PollPeriod - time.time(), 0)
         while True: # Feels bad, better than threading maybe?
             if self.__DoSample:
-                print(time.time())
-                time.sleep(g.next())
-                # As per MPipe's docs, if you return None that shuts down the pipeline, dont do this
-                value = self.__MCUInterface.getDataBuffer()
-                if value is not None and self.__PipeOut is not None:
-                    self.__PipeOut.put(value)
+                g = g_tick()
+                time.sleep(next(g))
+                value = None
+                while value is None and self.__DoSample:
+                    # As per MPipe's docs, if you return None that shuts down the pipeline, dont do this
+                    value = self.__MCUInterface.getDataBuffer()
+                    if value is not None and self.__PipeOut is not None:
+                        self.__PipeOut.put(value)
 
-    def begin(self):
-        self.__DoSample = True
-
-    def end(self):
+    def halt(self):
         self.__DoSample = False
+
+    def commence(self):
+        self.__DoSample = True
