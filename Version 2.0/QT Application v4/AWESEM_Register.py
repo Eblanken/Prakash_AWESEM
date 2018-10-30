@@ -36,9 +36,9 @@ class Register(mpipe.OrderedWorker):
     #   As per the mpipe interface doTask runs whenever the stage has data to
     #   distribute.
     #
-    def doTask(task):
+    def doTask(self, task):
         #assignedPositionVals = numpy.stack((self.__DataTranslateX(task[:, 0]), self.__DataTranslateY(task[:, 1]), task[:, 2]), 1)
-        print("Sending to callback")
+        print("Recieved")
         return 1
         #self.__outputCallback(assignedPositionVals)
     

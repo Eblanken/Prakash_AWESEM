@@ -102,8 +102,6 @@ class TestBench(QMainWindow):
         assignStage    = mpipe.Stage(self.__registerTh, 1)
         self.__ProcessingPipe = mpipe.Pipeline(assignStage) # Recieves input from
         self.__dataTh         = Data.DataIn(self.__MCUInterface, self.__ProcessingPipe)
-        self.__ProcessingPipe.put(1)
-        print("I put something")
 
         self.setupTheUi()
         self.setDefaults()
