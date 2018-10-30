@@ -58,6 +58,7 @@ class DataIn(threading.Thread):
                     # As per MPipe's docs, if you return None that shuts down the pipeline, dont do this
                     value = self.__MCUInterface.getDataBuffer()
                     if value is not None and self.__PipeOut is not None:
+                        print("Placing value")
                         self.__PipeOut.put(value)
 
     def halt(self):

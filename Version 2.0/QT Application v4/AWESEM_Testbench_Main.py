@@ -14,11 +14,9 @@
 #   MPipe cookbook:     http://vmlaker.github.io/mpipe/cookbook.html
 #
 #   To successfully run this application
-#   download the following: Anaconda, pyqt (installed using conda), mpipe
+#   download the following: Anaconda, pyqt (installed using conda), mpipe, numpy-indexed
 #
 #   Moving Forward:
-#       - Data should be a subclass of mpipe orderedWorker but without an entry point.
-#         It should generate its own data and enter that into the pipe but not read like sphagetti.
 #       - Work on and integrate analysis module.
 #       - Find a framework to make preformance timing easier
 #
@@ -30,7 +28,8 @@
 #         "apply" button or wait for return keystroke.
 #       - GUI Scaling is bad on windows, serial is bad on mac (may not be fixable / may be jus my mac, 
 #         Stroffgen has had simililar problems and has not been able to solve)
-#
+#       - Piping interface is pretty silly if we only have one worker thread, 
+#         data should be a subclass of mpipe orderedWorker but without an entry point.
 
 from   time                          import perf_counter
 import sys
@@ -45,7 +44,7 @@ from   AWESEM_Testbench_Autocode     import Ui_MainWindow
 from   AWESEM_PiPion_Interface       import AWESEM_PiPion_Interface
 import AWESEM_Constants              as Const
 import AWESEM_Data                   as Data
-import AWESEM_Display                as Display
+import AWESEM_Register               as Register
 import AWESEM_Analysis               as Analysis
 
 # Used for redirecting console output
@@ -83,6 +82,7 @@ class TestBench(QMainWindow):
 
     __MCUInterface      = None
     __dataTh            = None
+    __registerTh        = None
     __displayTh         = None
     __consoleOut        = None
     __ProcessingPipe    = None
@@ -96,19 +96,19 @@ class TestBench(QMainWindow):
         super(TestBench, self).__init__(*args, **kwargs)
         self.__MCUInterface  = AWESEM_PiPion_Interface()
 
-        self.__dataTh        = Data.DataIn(self.__MCUInterface, self.__ProcessingPipe)
-        self.__displayTh     = Display.Display()
-        self.__consoleOut    = Stream(newText = self.onUpdateText)
+        self.__registerTh    = Register.Register()
+        self.__registerTh.setOutputCallback(self.updateQTImage)
+        
+        assignStage    = mpipe.Stage(self.__registerTh, 1)
+        self.__ProcessingPipe = mpipe.Pipeline(assignStage) # Recieves input from
+        self.__dataTh         = Data.DataIn(self.__MCUInterface, self.__ProcessingPipe)
+        self.__ProcessingPipe.put(1)
+        print("I put something")
 
-        # Starts
-        self.__dataTh.start()
         self.setupTheUi()
         self.setDefaults()
         
-        assignStage    = mpipe.Stage(self.__displayTh, 1)
-        renderStage    = mpipe.OrderedStage(self.updateQTImage, 1) 
-        assignStage.link(renderStage)
-        self.__ProcessingPipe = mpipe.Pipeline(assignStage) # Recieves input from
+        self.__dataTh.start()
 
     def __del__(self):
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
@@ -148,6 +148,7 @@ class TestBench(QMainWindow):
         #sys.stdout = self.__consoleOut # COMBAK:
         self.__UiElems.Console_Preformance_Checkbox.stateChanged.connect(self.setConsolePreferences)
         self.__UiElems.Console_Verbose_Checkbox.stateChanged.connect(self.setConsolePreferences)
+        self.__consoleOut    = Stream(newText = self.onUpdateText)
 
     def setDefaults(self):
         # Scan Controls
@@ -198,7 +199,7 @@ class TestBench(QMainWindow):
     def updateQTImage(self, valueVectors):
         valueVectors[:, 0] = valueVectors[:, 0] * self.Plotter_Label.width()
         valueVectors[:, 1] = valueVectors[:, 1] * self.Plotter_Label.height()
-        valueVectors.astype(int)
+        valueVectors.astype(int) # TODO average duplicate values
         # Ordered workers from mpipe will return in order but might process however they
         # want. We really want access to the qpixmap to be exclusive.
         self.__updatingImageLock.acquire(True)
@@ -290,8 +291,8 @@ class TestBench(QMainWindow):
             yLambda = waveformLabels.get(self.__UiElems.Vertical_Waveform_Combobox.currentText())
         # Sets reconstruction functions
         if(xLambda is not None and yLambda is not None):
-            self.__displayTh.setDataTranslateX(xLambda)
-            self.__displayTh.setDataTranslateY(yLambda)
+            self.__registerTh.setDataTranslateX(xLambda)
+            self.__registerTh.setDataTranslateY(yLambda)
 
     #
     # Description:
