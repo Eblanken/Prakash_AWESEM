@@ -39,14 +39,31 @@ import numpy as np
     
 #
 # Description:
-#   Finds the phase offsets associated with the 
+#   Acquires a full pane of imaging data for the given parameters
+#   and builds a calibrated mapping file. Assumes that the target under
+#   the microscope is a grid.
+#
+def preformCalibration():
+    baseImage           = acquireModernArt()
+    lutCorrectedData    = retrievePhases(baseImage)
+    imageDistortionMaps = retrieveRefinement(lutCorrectedData)
+
+#
+# Description:
+#   Finds the phase offsets associated with the given base "modern art"
+#   image. Values are percentage of period of function of each axis.
 #
 #
 #def retrievePhases(fastPeriod, slowPeriod, sampleData):
 
+#
+# Description:
+#   Finds distortion maps for each of four iamges (rising falling vertical,
+#   rising falling horizontal) seperated and given initial values using data 
+#   from the retrievePhases method.
+#
+    
 # ------------------- Image Mapping Functions --------------
-
-# TODO Revisit basic functions
 
 #
 # Description

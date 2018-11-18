@@ -7,15 +7,23 @@
 # Description:
 #   This class starts the application and ties
 #   everything together. This also sets up and contains
-#   functions that handle GUI requests.
+#   functions that handle GUI requests. See the docs folder
+#   for an overview of the system.
 #
-#   PyQt tutorial:      http://pythonforengineers.com/your-first-gui-app-with-python-and-pyqt/
-#   Redirecting prints: https://stackoverflow.com/questions/44432276/print-out-python-console-output-to-qtextedit
-#   MPipe cookbook:     http://vmlaker.github.io/mpipe/cookbook.html
+#   General:
+#      PyQt tutorial:      http://pythonforengineers.com/your-first-gui-app-with-python-and-pyqt/
+#      Redirecting prints: https://stackoverflow.com/questions/44432276/print-out-python-console-output-to-qtextedit
+#      MPipe cookbook:     http://vmlaker.github.io/mpipe/cookbook.html # NOTE had issues, did not use
+#   Image processing:   
+#      Simple Itk:         http://www.simpleitk.org
+#      Simple elastix:     https://simpleelastix.github.io
 #
 #   To successfully run this application
 #   download the following: Anaconda, pyqt (installed using conda), mpipe, numpy-indexed
 #
+#   Notes:
+#       - Attempted to use mpipe but worked inconsistently on my windows laptop
+#       
 #   Moving Forward:
 #       - Work on and integrate analysis module.
 #       - Find a framework to make preformance timing easier
@@ -24,17 +32,16 @@
 #       - Seems like the scrolling message box does not update until a user interacts with it, 
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
-#       - Annoying to have the PiPion react to partially completed values, maybe add
+#       - Annoying to have the interface react to partially completed values, maybe add
 #         "apply" button or wait for return keystroke.
 #       - GUI Scaling is bad on windows, serial is bad on mac (may not be fixable / may be jus my mac, 
 #         Stroffgen has had simililar problems and has not been able to solve)
-#       - Piping interface is pretty silly if we only have one worker thread, 
-#         data should be a subclass of mpipe orderedWorker but without an entry point.
+#       - MPipe would be nice but appears to be broken on my windows machine / not cooperative on mac either
 
 from   time                          import perf_counter
 import sys
-import mpipe
 import numpy
+import numpy_indexed
 from   threading                     import Lock
 from   matplotlib                    import cm
 from   PyQt5.QtCore                  import *
@@ -85,36 +92,32 @@ class TestBench(QMainWindow):
     __registerTh        = None
     __displayTh         = None
     __consoleOut        = None
-    __ProcessingPipe    = None
-    __updatingImageLock = Lock()
     __ScanPixmap        = None
     __ColorMap          = cm.get_cmap('viridis')
     __UiElems           = None
     __ScanPixmap        = None
 
+    __DequeueDataToRegister = None
+
     def __init__(self, *args, **kwargs):
         super(TestBench, self).__init__(*args, **kwargs)
+        # Structure is MCU -(interface)-> dataTh -(double buffer)-> registerTh -(callback)-> monitor
         self.__MCUInterface  = AWESEM_PiPion_Interface()
-
-        self.__registerTh    = Register.Register()
-        self.__registerTh.setOutputCallback(self.updateQTImage)
-        
-        assignStage    = mpipe.Stage(self.__registerTh, 1)
-        self.__ProcessingPipe = mpipe.Pipeline(assignStage) # Recieves input from
-        self.__dataTh         = Data.DataIn(self.__MCUInterface, self.__ProcessingPipe)
+        self.__registerTh    = Register.Register(self.__DequeueDataToRegister, self.updateQTImage)
+        self.__dataTh  = Data.DataIn(self.__MCUInterface, self.__DequeueDataToRegister)
 
         self.setupTheUi()
         self.setDefaults()
         
         self.__dataTh.start()
+        self.__registerTh.start()
 
     def __del__(self):
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
 
     #
     # Description:
-    # Connect all the signals and slots
-    # TODO LUT, Console Checkboxes, ScanMode, saveImage
+    # TODO LUT, ScanMode, saveImage, imageCorrection
     #
     def setupTheUi(self):
         self.__UiElems = Ui_MainWindow()
@@ -195,16 +198,16 @@ class TestBench(QMainWindow):
     #   'valueVectors'  Numpy array of mapped image intensities of the format [xPosition, yPosition, intensityValue];[...]...
     #
     def updateQTImage(self, valueVectors):
+        # Assigns image coordinates and averages duplicates
         valueVectors[:, 0] = valueVectors[:, 0] * self.Plotter_Label.width()
         valueVectors[:, 1] = valueVectors[:, 1] * self.Plotter_Label.height()
-        valueVectors.astype(int) # TODO average duplicate values
-        # Ordered workers from mpipe will return in order but might process however they
-        # want. We really want access to the qpixmap to be exclusive.
-        self.__updatingImageLock.acquire(True)
+        valueVectors.astype(int)
+        valueVectors = numpy_indexed.group_by(valueVectors[:, 0:1]).mean(valueVectors)
+        valueVectors.astype(int)
+        # Updates QT image
         for value in valueVectors:
             self.__ScanPixmap.setPixelColor(value[0], value[1], self._ColorMap(float(value[2]) / 255.0))
         self.__UiElems.Plotter_Label.setPixMap(self.__ScanPixmap.scaled(self.Plotter_Label.width(), self.Plotter_Label.height()))
-        self.__updatingImageLock.release()
 
     def toggleScanning(self):
         if(self.__MCUInterface.isScanning()):
@@ -216,8 +219,19 @@ class TestBench(QMainWindow):
             self.__MCUInterface.beginEvents()
             self.__dataTh.commence()
 
+    #
+    # Description:
+    #   Brings up dialog to save the image currently on the monitor to the disk.
+    #
     def saveImage(self):
         print("Saving Not Implimented") # TODO Saving
+
+    #
+    # Description:
+    #   
+    #
+    def calibrate(self):
+        
 
     #
     # Descripion:

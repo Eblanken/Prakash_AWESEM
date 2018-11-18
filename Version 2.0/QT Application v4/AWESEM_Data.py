@@ -28,12 +28,12 @@ from   AWESEM_PiPion_Interface import AWESEM_PiPion_Interface
 import AWESEM_Constants        as     Const
 
 class DataIn(threading.Thread):
-    __PipeOut      = None
+    __OutQueue     = None
     __PollPeriod   = None
     __MCUInterface = None
     __DoSample     = False
 
-    def __init__(self, MCUInterface, PipeOut):
+    def __init__(self, MCUInterface, outputQueue):
         threading.Thread.__init__(self)
         self.__MCUInterface = MCUInterface
         self.__PipeOut      = PipeOut
@@ -57,9 +57,8 @@ class DataIn(threading.Thread):
                 while value is None and self.__DoSample:
                     # As per MPipe's docs, if you return None that shuts down the pipeline, dont do this
                     value = self.__MCUInterface.getDataBuffer()
-                    if value is not None and self.__PipeOut is not None:
-                        print("Placed")
-                        self.__PipeOut.put(value)
+                    if value is not None and self.__OutQueue is not None:
+                        self.__OutQueue.append(value)
 
     def halt(self):
         self.__DoSample = False
