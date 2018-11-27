@@ -305,6 +305,7 @@ void parseSetDacWaveform() {
   *   freqA then freqB as floats in hertz as raw bytes.
   */
 void parseGetSFrequency() {
+  Serial.write('A');
   FLOATUNION_t freqFloat;
   freqFloat.number = Adc_getFrequency();
   Serial.write(freqFloat.bytes, 4);
@@ -328,7 +329,9 @@ void parseSetSFrequency() {
  *  Returns the number of samples averaged per ADC data point.
  */
 void parseGetSAverages() {
+  Serial.write('A');
   Serial.write(Adc_getAverages());
+  Serial.send_now();
 }
 
 /*
