@@ -69,7 +69,7 @@ def preformCalibration():
 
 #
 # Description
-#   Returns the value of a sine function for the given parameters, 
+#   Returns the value of a cose function for the given parameters, 
 #   migrated from WaveGen.
 #
 # Parameters:
@@ -79,10 +79,12 @@ def preformCalibration():
 #   'phase'     Phase of the sine wave as a percentage of 2pi
 #   'baseOffset' Shift upwards applied to all points. By default set to amplitude (so that base is 0)
 #
-def sine(inputTime, amplitude, frequency, phase, baseOffset = None):
+def cos(inputTime, amplitude, frequency, phase, baseOffset = None):
+    if inputTime is None: # Filtering can send "None" as input data occasionally
+        return None
     if baseOffset is None:
         baseOffset = amplitude
-    return amplitude * np.sin((inputTime * frequency - phase) * 2.0 * np.pi) + baseOffset
+    return amplitude * np.cos((inputTime * frequency - phase) * 2.0 * np.pi) + baseOffset
 #
 # Description
 #   Returns the value of a triangle function for the given parameters, 
@@ -96,9 +98,11 @@ def sine(inputTime, amplitude, frequency, phase, baseOffset = None):
 #   'baseOffset' Shift upwards applied to all point, by default shifted up by none (so that base is 0)
 #
 def triangle(inputTime, amplitude, frequency, phase, baseOffset = None):
+    if inputTime is None: # Filtering can send "None" as input data occasionally
+        return None
     if baseOffset is None:
         baseOffset = amplitude
-    return ((2.0 * amplitude) / np.pi) * (np.arcsin(np.sin(((inputTime * frequency) - phase) * 2.0 * np.pi))) + (amplitude / 2.0) + baseOffset
+    return ((2.0 * amplitude) / np.pi) * (np.arcsin(np.sin(((inputTime * frequency) - phase + 0.25) * 2.0 * np.pi))) + baseOffset
     
 #
 # Description
@@ -114,6 +118,8 @@ def triangle(inputTime, amplitude, frequency, phase, baseOffset = None):
 #   'baseOffset' Shift upwards applied to all points, by default shifted up by amplitude (so that base is 0)
 #
 def sawTooth(inputTime, amplitude, frequency, phase, baseOffset = None):
+    if inputTime is None: # Filtering can send "None" as input data occasionally
+        return None
     if baseOffset is None:
         baseOffset = amplitude
-    return (2 * amplitude * np.mod((inputTime - (phase / frequency)), 1.0/frequency) * frequency) + baseOffset - amplitude
+    return (2 * amplitude * np.mod((inputTime - phase / frequency), 1.0/frequency) * frequency) + baseOffset - amplitude

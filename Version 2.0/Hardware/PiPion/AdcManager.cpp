@@ -29,6 +29,7 @@ float          adcSampleFrequency = ADC_SAMPLEFREQUENCY;
 elapsedMicros  duration;
 uint32_t       totalPacketCount = 0;
 uint32_t       currentSampleCount = 0;
+bool           doSample = false;
 #ifdef ADC_DEBUG
 volatile bool lastOn = false;
 #endif
@@ -36,6 +37,8 @@ volatile bool lastOn = false;
 //----------------------- Public Functions ----------------------
 
 #define MICROSFROMFREQ(frequency) (1000000.0 / frequency)
+
+void Adc_samplePrep();
 
 /*
  * Description:
@@ -47,6 +50,7 @@ void Adc_init() {
   Adc.enableInterrupts(ADC_0);
   Adc.setAveraging(adcAverages);
   Adc.setResolution(8);
+  Adc_pause();
   #ifdef ADC_DEBUG
   pinMode(ADC_DEBUG_PIN_SAMPLE, OUTPUT);
   pinMode(ADC_DEBUG_PIN_BUFFERXCHANGE, OUTPUT);
@@ -112,7 +116,12 @@ bool Adc_setAverages(uint8_t newAverages) {
  *  that all elements in the buffer are reset.
  */
 void Adc_pause() {
-  AdcSampleTimer.end();
+  doSample = false;
+  AdcBuffer_resetBuffer();
+  currentSampleCount = 0;
+  duration           = 0;
+  Adc.setAveraging(adcAverages);
+  AdcSampleTimer.begin(Adc_samplePrep, MICROSFROMFREQ(adcSampleFrequency));
 }
 
 /*
@@ -120,10 +129,12 @@ void Adc_pause() {
  *  Propmpts ADC conversion to begin.
  */
 void Adc_samplePrep() {
-  Adc.startSingleRead(ADC_PIN, ADC_0);
-  #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
-  digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, HIGH);
-  #endif
+  if(doSample) {
+    Adc.startSingleRead(ADC_PIN, ADC_0);
+    #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
+    digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, HIGH);
+    #endif
+  }
 }
 
 /*
@@ -131,11 +142,7 @@ void Adc_samplePrep() {
  *  Resumes interrupts for the ADC conversion.
  */
 void Adc_resume() {
-  AdcBuffer_resetBuffer();
-  currentSampleCount = 0;
-  duration           = 0;
-  Adc.setAveraging(adcAverages);
-  AdcSampleTimer.begin(Adc_samplePrep, MICROSFROMFREQ(adcSampleFrequency));
+  doSample = true;
 }
 
 /*

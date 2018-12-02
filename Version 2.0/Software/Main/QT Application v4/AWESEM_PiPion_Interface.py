@@ -17,6 +17,11 @@
 #
 # TODO:
 #   - Connection validation and updating is bad, revisit this module
+#   - b and a offsets where switched the whole time! Revisit what is defined as
+#     a and b.
+#   - Currently internal timing jumps around a bit which causes jumps. Probably rollover on the micros
+#     used inside of the MCU. Should tie an interrupt to the audio output library
+#     to handle the timing.
 
 # ----------------------- Imported Libraries ------------------------------------
 
@@ -32,7 +37,7 @@ from serial.tools import list_ports
 class AWESEM_PiPion_Interface:
 
     # Variables
-    _verbose = True # Debugging
+    _verbose = False # Debugging
     _currentlyConnected = False
     _currentlyScanning  = False
     _serialPort = None # Object for serial communication
@@ -131,11 +136,11 @@ class AWESEM_PiPion_Interface:
                             self._dacFrequencies[index] = struct.unpack('<f', self._readBytes(4))
                         else:
                             if self._verbose:
-                                print("Error: AWSEM_getDacFrequency, ackowledgement failure '%s'" % response.hex())
+                                print("Error: McuInterface_getDacFrequency, ackowledgement failure '%s'" % response.hex())
                             return None
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_getDacFrequency, unit disconnected")
+                        print("Error: McuInterface_getDacFrequency, unit disconnected")
                     return None
         # Returns from prior history
         return self._dacFrequencies[dacChannel]
@@ -166,13 +171,13 @@ class AWESEM_PiPion_Interface:
                     return True
                 elif response == b'F':
                     if self._verbose:
-                        print("Error, AWESEM_setDacFrequency, bad arguments")
+                        print("Error, McuInterface_setDacFrequency, bad arguments")
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_setDacFrequency, ackowledgement failure '%s'" % response.hex())
+                        print("Error: McuInterface_setDacFrequency, ackowledgement failure '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error: AWSEM_getDacFrequency, unit disconnected")
+                    print("Error: McuInterface_getDacFrequency, unit disconnected")
         return False
 
     #
@@ -197,11 +202,11 @@ class AWESEM_PiPion_Interface:
                             self._dacMagnitudes[index] = struct.unpack('<f', self._readBytes(4))
                         else:
                             if self._verbose:
-                                print("Error: AWSEM_getDacMagnitude, acknowledgement failure '%s'" % response.hex())
+                                print("Error: McuInterface_getDacMagnitude, acknowledgement failure '%s'" % response.hex())
                             return None
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_getDacMagnitude, unit disconnected")
+                        print("Error: McuInterface_getDacMagnitude, unit disconnected")
                     return None
         return self._dacMagnitudes[dacChannel]
     #
@@ -230,13 +235,13 @@ class AWESEM_PiPion_Interface:
                     return True
                 elif response == b'F':
                     if self._verbose:
-                        print("Error, AWESEM_setDacMagnitude, bad arguments")
+                        print("Error, McuInterface_setDacMagnitude, bad arguments")
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_setDacMagnitude, acknowledgement failure '%s'" % response.hex())
+                        print("Error: McuInterface_setDacMagnitude, acknowledgement failure '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error: AWSEM_setDacMagnitude, unit disconnected")
+                    print("Error: McuInterface_setDacMagnitude, unit disconnected")
         return False
 
     #
@@ -265,11 +270,11 @@ class AWESEM_PiPion_Interface:
                             self._dacWaveforms[index] = struct.unpack('<b', self._readBytes(1))
                         else:
                             if self._verbose:
-                                print("Error: AWSEM_getDacWaveform, ackowledgement failure '%s'" % response.hex())
+                                print("Error: McuInterface_getDacWaveform, ackowledgement failure '%s'" % response.hex())
                             return None
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_getDacWaveform, unit disconnected")
+                        print("Error: McuInterface_getDacWaveform, unit disconnected")
                     return None
         return self._dacWaveforms[dacChannel]
     
@@ -298,13 +303,13 @@ class AWESEM_PiPion_Interface:
                     return True
                 elif response == b'F':
                     if self._verbose:
-                        print("Error: AWESEM_setDacWaveform, bad arguments")
+                        print("Error: McuInterface_setDacWaveform, bad arguments")
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_setDacWaveform, ackowledgement failure '%s'" % response.hex())
+                        print("Error: McuInterface_setDacWaveform, ackowledgement failure '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error: AWSEM_setDacWaveform, unit disconnected")
+                    print("Error: McuInterface_setDacWaveform, unit disconnected")
         return False
 
     #
@@ -327,11 +332,11 @@ class AWESEM_PiPion_Interface:
                         self._adcFrequency = struct.unpack('<f', self._readBytes(4))
                     else:
                         if self._verbose:
-                            print("Error: AWESEM_getAdcFrequency, acknowledgement failure '%s'" % response.hex())
+                            print("Error: McuInterface_getAdcFrequency, acknowledgement failure '%s'" % response.hex())
                         return None
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_getAdcFrequency, unit disconnected")
+                        print("Error: McuInterface_getAdcFrequency, unit disconnected")
                     return None
         return self._adcFrequency
 
@@ -356,13 +361,13 @@ class AWESEM_PiPion_Interface:
                     return True
                 elif response == b'F':
                     if self._verbose:
-                        print("Error: AWESEM_setAdcFrequency, bad arguments")
+                        print("Error: McuInterface_setAdcFrequency, bad arguments")
                 else:
                     if self._verbose:
-                        print("Error: AWESEM_setAdcFrequency, acknowledgement failure  '%s'" % response.hex())
+                        print("Error: McuInterface_setAdcFrequency, acknowledgement failure  '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error: AWESEM_setAdcFrequency, unit disconnected")
+                    print("Error: McuInterface_setAdcFrequency, unit disconnected")
         return False
 
     #
@@ -387,10 +392,10 @@ class AWESEM_PiPion_Interface:
                         self._adcAverages = struct.unpack('<b', self._readBytes(1))
                     else:
                         if self._verbose:
-                            print("Error: AWESEM_getAdcAverages, ackowledgement failure '%s'" % response.hex())
+                            print("Error: McuInterface_getAdcAverages, ackowledgement failure '%s'" % response.hex())
                 else:
                     if self._verbose:
-                        print("Error: AWESEM_getAdcAverages, unit disconnected")
+                        print("Error: McuInterface_getAdcAverages, unit disconnected")
         return self._adcAverages
     
     #
@@ -417,13 +422,13 @@ class AWESEM_PiPion_Interface:
                     return True
                 elif response == b'F':
                     if self._verbose:
-                        print("Error: AWESEM_setAdcAverages, bad arguments")
+                        print("Error: McuInterface_setAdcAverages, bad arguments")
                 else:
                     if self._verbose:
-                        print("Error: AWESEM_setAdcAverages, ackowledgement failure '%s'" % response.hex())
+                        print("Error: McuInterface_setAdcAverages, ackowledgement failure '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error: AWESEM_setAdcAverages, unit disconnected")
+                    print("Error: McuInterface_setAdcAverages, unit disconnected")
         return False
 
     #
@@ -441,28 +446,28 @@ class AWESEM_PiPion_Interface:
                 if response == b'A':
                     currentNumber = struct.unpack('<I', self._readBytes(4))
                     if(currentNumber[0] - self._lastPacketID - 1 > 0):
-                        print("Error, AWESEM_getDataBuffer, missed %d packets" % (currentNumber[0] - self._lastPacketID - 1))
+                        print("Error, McuInterface_getDataBuffer, missed %d packets" % (currentNumber[0] - self._lastPacketID - 1))
                     self._lastPacketID = currentNumber[0]
                     # Result consists of three 32 bit integers and then an
                     # array of bytes.
-                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
-                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0]
+                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In milliseconds
+                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In milliseconds
                     duration = (struct.unpack('<I', self._readBytes(4)))[0]
                     byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
                     byteArray = numpy.frombuffer(byteList, numpy.uint8)
-                    value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE), byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
+                    value = numpy.stack((numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
                     return value
-                elif response == b'F':
-                    if self._verbose:
-                        print("Error: AWSEM_getDataBuffer, no buffer ready")
-                    return None
+                #elif response == b'F':
+                    #if self._verbose:
+                        #print("Error: AWSEM_getDataBuffer, no buffer ready")
+                    #return None
                 else:
                     if self._verbose:
-                        print("Error: AWSEM_getDataBuffer, ackowledgement failure '%s'" % response.hex())
+                        print("Error: McuInterface_getDataBuffer, ackowledgement failure '%s'" % response.hex())
                     return None
             else:
                 if self._verbose:
-                    print("Error: AWSEM_getDataBuffer, unit disconnected")
+                    print("Error: McuInterface_getDataBuffer, unit disconnected")
                 return None
         return None
 
@@ -481,10 +486,10 @@ class AWESEM_PiPion_Interface:
                     return True
                 else:
                     if self._verbose:
-                        print("Error, AWESEM_beginEvents, ackowledgement failure '%s'" % response.hex())
+                        print("Error, McuInterface_beginEvents, ackowledgement failure '%s'" % response.hex())
             else:
                 if self._verbose:
-                    print("Error, AWESEM_beginEvents, unit disconnected")
+                    print("Error, McuInterface_beginEvents, unit disconnected")
         return False
     #
     # Description:
@@ -502,11 +507,11 @@ class AWESEM_PiPion_Interface:
                     return True
                 else:
                     if self._verbose:
-                        print("Error, AWESEM_beginEvents, ackowledgement failure")
+                        print("Error, McuInterface_beginEvents, ackowledgement failure")
                     return False
             else:
                 if self._verbose:
-                    print("Error, AWESEM_pauseEvents, unit disconnected")
+                    print("Error, McuInterface_pauseEvents, unit disconnected")
                 return False
         return False
 
@@ -526,7 +531,7 @@ class AWESEM_PiPion_Interface:
     def _findPort(self):
         portList = list_ports.comports()
         if self._verbose:
-            print("Searching for the PiPion:")
+            print("McuInterface, Searching for the PiPion:")
         for index in range(0, self._SERIAL_RECONNECTIONATTEMPTS):
             for currentPort in portList:
                 try:
@@ -534,17 +539,17 @@ class AWESEM_PiPion_Interface:
                     self._serialPort.close()
                     self._serialPort.open()
                     if self._verbose:
-                        print(" Port: %s, %s, %s" % (currentPort.device, currentPort.name, currentPort.description))
+                        print("  -> Port: %s, %s, %s" % (currentPort.device, currentPort.name, currentPort.description))
                 except:
                     continue
                 self._serialPort.timeout = self._SERIAL_TIMEOUT
                 if self.ping():
                     self._currentlyConnected = True
                     if self._verbose:
-                        print('Connection established with the PiPion.')
+                        print('McuInterface, Connection established with the PiPion.')
                     return True
                 else:
                     self._serialPort.close()
         if self._verbose:
-            print('No serial ports found for the PiPion.')
+            print('McuInterface, No serial ports found for the PiPion.')
         return False

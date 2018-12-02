@@ -197,8 +197,6 @@ uint32_t Dac_getBOffsetMicros() {
 void Dac_pause() {
   ChannelA.amplitude(0);
   ChannelB.amplitude(0);
-  AUpdater.end();
-  BUpdater.end();
 }
 
 
@@ -207,6 +205,7 @@ void Dac_pause() {
  *  Resets the A timer at the end of the last A period.
  */
 void Dac_updateATimer() {
+  ChannelA.phase(0);
   aDuration = 0;
 }
 
@@ -215,6 +214,7 @@ void Dac_updateATimer() {
  *  Resets the B timer at the end of the last B period.
  */
 void Dac_updateBTimer() {
+  ChannelB.phase(0);
   bDuration = 0;
 }
 
@@ -228,11 +228,13 @@ void Dac_resume() { // TODO verify restart order
   ChannelB.begin(channelBWaveform); 
   ChannelA.frequency(channelAFrequency);
   ChannelB.frequency(channelBFrequency);
-  ChannelA.phase(0);
-  ChannelB.phase(0);
-  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
-  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
   ChannelA.amplitude(channelAMagnitude);
   ChannelB.amplitude(channelBMagnitude);
+  aDuration = 0;
+  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
+  ChannelA.phase(0);
+  bDuration = 0;
+  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
+  ChannelB.phase(0);
 }
 

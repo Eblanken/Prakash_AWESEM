@@ -44,6 +44,7 @@ class DataIn(threading.Thread):
         self.__PollPeriod = 1.0 / float(newPollFrequency)
         return True
 
+    """
     def run(self):
         def g_tick():
             t = time.time()
@@ -59,6 +60,25 @@ class DataIn(threading.Thread):
                 while value is None and self.__DoSample:
                     value = self.__MCUInterface.getDataBuffer()
                     if value is not None:
+                        if self.__InternalNumCollect > 0: # Happens if redirected by acquireNBuffers
+                            self.__InternalNumCollect = self.__InternalNumCollect - 1
+                            self.__InternalQueue.append(value)
+                        if self.__DoSample and self.__OutQueue is not None:
+                            self.__OutQueue.append(value)
+    """
+    
+    def run(self):
+        while True: # Feels bad, better than threading maybe?
+            if self.__DoSample or self.__InternalNumCollect > 0:
+                value = None
+                while value is None and self.__DoSample:
+                    value = self.__MCUInterface.getDataBuffer()
+                    if value is not None:
+                        #if self.justHalted < 4:
+                        #    self.justHalted = self.justHalted + 1
+                        #    if self.justHalted > 3:
+                        #        self.justHalted = 10
+                        #        print(value[0, :])
                         if self.__InternalNumCollect > 0: # Happens if redirected by acquireNBuffers
                             self.__InternalNumCollect = self.__InternalNumCollect - 1
                             self.__InternalQueue.append(value)
@@ -90,6 +110,7 @@ class DataIn(threading.Thread):
     #   Stops acquiring sample blocks for continous streaming.
     #
     def halt(self):
+        self.justHalted = 0 # TODO debug thingy please kill me
         self.__DoSample = False
 
     #
@@ -97,4 +118,5 @@ class DataIn(threading.Thread):
     #   Starts acquiring sample blocks for continuous streaming.
     #
     def commence(self):
+        self.justHalted = 0
         self.__DoSample = True

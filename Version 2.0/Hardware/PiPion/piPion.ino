@@ -386,8 +386,8 @@ void parseGetBuffer() {
  *  the DAC output.
  */
 void parseStartEvents() {
-  Adc_resume();
   Dac_resume();
+  Adc_resume();
   Serial.write('A');
   Serial.send_now();
 }

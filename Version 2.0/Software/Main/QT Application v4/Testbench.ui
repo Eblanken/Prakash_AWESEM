@@ -45,6 +45,15 @@
     <property name="keyboardTracking">
      <bool>false</bool>
     </property>
+    <property name="minimum">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="value">
+     <double>0.010000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="Horizontal_Frequency_Spinbox">
     <property name="geometry">
@@ -58,11 +67,14 @@
     <property name="keyboardTracking">
      <bool>false</bool>
     </property>
+    <property name="minimum">
+     <double>0.010000000000000</double>
+    </property>
     <property name="maximum">
      <double>99.000000000000000</double>
     </property>
     <property name="singleStep">
-     <double>1.000000000000000</double>
+     <double>0.010000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="Horizontal_Amplitude_Spinbox">
@@ -378,8 +390,11 @@
     <property name="keyboardTracking">
      <bool>false</bool>
     </property>
+    <property name="minimum">
+     <double>-0.500000000000000</double>
+    </property>
     <property name="maximum">
-     <double>1.000000000000000</double>
+     <double>0.500000000000000</double>
     </property>
     <property name="singleStep">
      <double>0.010000000000000</double>
@@ -483,8 +498,11 @@
     <property name="keyboardTracking">
      <bool>false</bool>
     </property>
+    <property name="minimum">
+     <double>-0.500000000000000</double>
+    </property>
     <property name="maximum">
-     <double>1.000000000000000</double>
+     <double>0.500000000000000</double>
     </property>
     <property name="singleStep">
      <double>0.010000000000000</double>
@@ -556,7 +574,7 @@
     </property>
     <item>
      <property name="text">
-      <string> All</string>
+      <string>All</string>
      </property>
     </item>
     <item>

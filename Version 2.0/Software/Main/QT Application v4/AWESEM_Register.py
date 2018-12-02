@@ -30,13 +30,12 @@ import AWESEM_Data      as Data
 #from   time             import perf_counter
 
 class Register(threading.Thread):
-    # Data processing
     __DataTranslateX              = None
     __DataTranslateY              = None
+    __DataFilterX                 = None
+    __DataFilterY                 = None
     __InputBuffer                 = None
     __StandardCallback            = None
-    __AlternateCallback           = None
-    __AlternateCallbackNumbuffers = 0
 
     def __init__(self, inputQueue, outputCallback):
         threading.Thread.__init__(self)
@@ -45,22 +44,12 @@ class Register(threading.Thread):
 
     #
     # Description:
-    #   As per the mpipe interface doTask runs whenever the stage has data to
-    #   distribute.
+    #   Translates points and evaluates callback.
     #
     def run(self):
         while True:
             if(len(self.__InputBuffer) > 0):
-                print(len(self.__InputBuffer) )
-                newestBuffer = self.__InputBuffer.popleft()
-                assignedPositionVals = self.registerPoints(newestBuffer)
-                if(self.__AlternateCallbackNumbuffers > 0 and callable(self.__AlternateCallback)):
-                    self.__AlternateCallbackNumbuffers = self.__AlternateCallbackNumbuffers - 1
-                    self.__AlternateCallback(newestBuffer)
-                    if(self.__AlternateCallbackNumbuffers <= 0):
-                        self.__AlternateCallback = None
-                else:
-                    self.__OutputCallback(assignedPositionVals)
+                self.__OutputCallback(self.registerPoints(self.__InputBuffer.popleft()))
 
     #
     # Description:
@@ -70,22 +59,68 @@ class Register(threading.Thread):
     #   'newestBuffer'  Buffer of the format: (aTimestamp, bTimestamp, value (byte); ... ; ...)
     #   'functionX'     Callback to translate timestamps in microseconds to position, if specified overrides internal function
     #   'functionY'     Callback to translate timestamps in microseconds to position, if specified overrides internal function
+    #   'filterX'       Callback to filter timestamps, if specified overrides internal function
+    #   'filtery'       Callback to filter timestamps, if specified overrides internal function
     #
-    def registerPoints(self, newestBuffer, functionX = None, functionY = None):
+    def registerPoints(self, newestBuffer, functionX = None, functionY = None, filterX = None, filterY = None):
         # Checks defaults
         if functionX is None:
             functionX = self.__DataTranslateX
         if functionY is None:
             functionY = self.__DataTranslateY
+        if filterX is None:
+            filterX = self.__DataFilterX
+        if filterY is None:
+            filterY = self.__DataFilterY
 
-        # Applies translation function
-        #print(newestBuffer)
-        assignedPositionVals = numpy.stack((functionX(newestBuffer[:, 0] / 1000000), functionY(newestBuffer[:, 1] / 1000000), newestBuffer[:, 2]), 1).astype(int)
-        #print(assignedPositionVals)
-        # Merges duplicate coordinates
-        numpy_indexed.group_by(assignedPositionVals[:, [0, 1]]).mean(assignedPositionVals)
-        #print(assignedPositionVals)
-        return assignedPositionVals
+        # Applies filter function
+        boolX = numpy.ones(len(newestBuffer), dtype = bool)
+        if filterX is not None:
+            boolX = filterX(newestBuffer[:, 0])
+        boolY = numpy.ones(len(newestBuffer), dtype = bool)
+        if filterY is not None:
+            boolY = filterY(newestBuffer[:, 1])
+        boolTotal = numpy.logical_and(boolX, boolY)
+        newestBuffer = newestBuffer[boolTotal, :]
+        
+        if(newestBuffer.size > 0):
+            # Applies translation function
+            assignedPositionVals = numpy.stack((functionX(newestBuffer[:, 0]), functionY(newestBuffer[:, 1]), newestBuffer[:, 2]), 1).astype(int)
+            # Merges duplicate coordinates
+            numpy_indexed.group_by(assignedPositionVals[:, [0, 1]]).mean(assignedPositionVals)
+            return assignedPositionVals
+        print("Threw Buffer")
+        return None
+
+    #
+    # Description:
+    #   Filters the given data buffer by timestamps of the x (a) axis.
+    #
+    # Parameters:
+    #   'filterFunction' Callback to filter a column array of timestamps in
+    #                    milliseconds. Should return a boolean array.
+    #                    Set to None to disable filtering.
+    #
+    def setDataFilterX(self, filterFunction):
+        if(callable(filterFunction) or filterFunction is None):
+            self.__DataFilterX = filterFunction
+            return True
+        return False
+    
+    #
+    # Description:
+    #   Filters the given data buffer by timestamps of the y (a) axis.
+    #
+    # Parameters:
+    #   'filterFunction' Callback to filter a column array of timestamps in
+    #                    milliseconds. Should return a boolean array.
+    #                    Set to None to disable filtering.
+    #
+    def setDataFilterY(self, filterFunction):
+        if(callable(filterFunction) or filterFunction is None):
+            self.__DataFilterY = filterFunction
+            return True
+        return False
 
     #
     # Desccription:

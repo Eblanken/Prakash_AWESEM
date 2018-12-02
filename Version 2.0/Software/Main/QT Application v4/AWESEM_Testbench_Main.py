@@ -35,6 +35,7 @@
 #       - GUI Scaling is bad on windows, serial is bad on mac (may not be fixable / may be jus my mac,
 #         Stroffgen has had simililar problems and has not been able to solve)
 #       - MPipe would be nice but appears to be broken on my windows machine / not cooperative on mac either
+#       - Random offset in sample timing upon initialization in MCU (at least in fast axis, bad setting of the offset intervalCounter)
 
 #from   time                          import perf_counter
 from   collections                   import deque
@@ -137,11 +138,14 @@ class TestBench(QMainWindow):
 
         # Sampling
         self.__UiElems.Sampling_Frequency_Spinbox.valueChanged.connect(self.setSamplingFrequency)
-        # self.Sampling_Averages_Spinbox.valueChanged.connect(self.setSamplingAverages) # TODO
+        # self.__UiElems.Sampling_Averages_Spinbox.valueChanged.connect(self.setSamplingAverages) # TODO MCU only handles specific averaging quantites, need to create list in GUI
         self.__UiElems.Sampling_Phase_Vertical_Spinbox.valueChanged.connect(self.setSamplingReconstruction)
         self.__UiElems.Sampling_Phase_Horizontal_Spinbox.valueChanged.connect(self.setSamplingReconstruction)
-        # self.Sampling_LUT_Combobox.textChanged.connect(self.setSamplingReconstruction) # TODO
-        self.__UiElems.Sampling_Collection_Combobox.currentTextChanged.connect(self.setSamplingReconstruction)
+        self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
+        self.__UiElems.Sampling_Collection_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
+
+        # Window 
+        self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
         # Console output
         #sys.stdout = self.__consoleOut # COMBAK:
@@ -167,8 +171,9 @@ class TestBench(QMainWindow):
 
         # Sampling
         self.__UiElems.Sampling_Frequency_Spinbox.setValue(Const.DEFAULT_ADC_SAMPLEFREQUENCY)
-        # self.Sampling_Phase_Spinbox.setValue() TODO
-        # TODO Averages, scanMode
+        self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
+        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
+        # TODO Averages
 
         # Console
         self.__UiElems.Console_Preformance_Checkbox.setCheckState(1)
@@ -195,20 +200,22 @@ class TestBench(QMainWindow):
     #   'valueVectors'  Numpy array of mapped image intensities of the format [xPosition, yPosition, intensityValue];[...]...
     #
     def updateQTImage(self, valueVectors):
-        # Updates QT image
-        colorTool = QColor()
-        number = 0
-        for value in valueVectors: # TODO this complicated color conversion makes me sad
-            number = number + 1
-            colorVector = self.__ColorMap(float(value[2]) / 255.0)
-            colorTool.setRgb(colorVector[1] * 255, colorVector[2] * 255, colorVector[2] * 255)
-            self.__ScanImage.setPixel(int(value[0]), int(value[1]), colorTool.rgb())
-            #print("Value: %d, %d, %d" % (int(value[0]), int(value[1]), colorTool.rgb()))
-        self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
+        if valueVectors is not None:
+            # Updates QT image
+            colorTool = QColor()
+            number = 0
+            for value in valueVectors: # TODO this complicated color conversion makes me sad
+                number = number + 1
+                colorVector = self.__ColorMap(float(value[2]) / 255.0)
+                colorTool.setRgb(colorVector[0] * 255, colorVector[1] * 255, colorVector[2] * 255)
+                self.__ScanImage.setPixel(int(value[0]), int(value[1]), colorTool.rgb())
+                #print("Value: %d, %d, %d" % (int(value[0]), int(value[1]), colorTool.rgb()))
+            self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     def toggleScanning(self):
         if(self.__MCUInterface.isScanning()):
             self.__UiElems.Scan_Pushbutton.setText("Start Scanning")
+            self.__DequeDataToRegister.clear()
             self.__MCUInterface.pauseEvents()
             self.__dataTh.halt()
         else:
@@ -278,6 +285,9 @@ class TestBench(QMainWindow):
         # Refreshes MCU
         if(self.__MCUInterface.isScanning()): # If not scanning will take effect on startup anyway
             self.__MCUInterface.pauseEvents()
+            self.__DequeDataToRegister.clear()
+            self.__dataTh.halt()
+            self.__dataTh.commence()
             self.__MCUInterface.beginEvents()
 
         # Updates LUT methods to reflect new waveform
@@ -289,32 +299,80 @@ class TestBench(QMainWindow):
     #   interpreting sampled data.
     #
     def setSamplingReconstruction(self):
-        xLambda = None
-        yLambda = None
-        xPhase  = self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value()
-        yPhase  = self.__UiElems.Sampling_Phase_Vertical_Spinbox.value()
-        xFrequency = self.__UiElems.Horizontal_Frequency_Spinbox.value() # Spinbox is hz
-        yFrequency = self.__UiElems.Vertical_Frequency_Spinbox.value()   # Spinbox is hz
-        xAmplitude = self.__UiElems.Plotter_Label.width() * 0.5  # Fits into display image
-        yAmplitude = self.__UiElems.Plotter_Label.height() * 0.5 # Fits into display image
-        currentLUTMode = self.__UiElems.Sampling_LUT_Combobox.currentText()
+        xFunction       = None
+        yFunction       = None
+        xFilterFunction = None
+        yFilterFunction = None
+        xPhase          = self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value()
+        yPhase          = self.__UiElems.Sampling_Phase_Vertical_Spinbox.value()
+        xFrequency      = self.__UiElems.Horizontal_Frequency_Spinbox.value() # Spinbox is hz
+        yFrequency      = self.__UiElems.Vertical_Frequency_Spinbox.value()   # Spinbox is hz
+        xAmplitude      = self.__UiElems.Plotter_Label.width() * 0.5  # Fits into display image, centered in middle
+        yAmplitude      = self.__UiElems.Plotter_Label.height() * 0.5 # Fits into display image, centered in middle
+        currentLUTMode  = self.__UiElems.Sampling_LUT_Combobox.currentText()
         # TODO add image analysis distortion correction mode
         if(currentLUTMode == "Linear"):
-            xLambda = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, xPhase)
-            yLambda = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, yPhase)
+            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, xPhase)
+            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, yPhase)
+            
         elif currentLUTMode == "Axis Waveform":
-            waveformLabels = { # Values correspond to those on Teensy
-                    "Sine"     : Analysis.sine,
+            waveformFunctions = { # Values correspond to those on Teensy
+                    "Sine"     : Analysis.cos,
                     "Sawtooth" : Analysis.sawTooth, # Square is 2). currently unused
                     "Triangle" : Analysis.triangle
                     }
             # Assigns waveform
-            xLambda = lambda inputTime : waveformLabels.get(self.__UiElems.Horizontal_Waveform_Combobox.currentText())(inputTime, xAmplitude, xFrequency, xPhase)
-            yLambda = lambda inputTime : waveformLabels.get(self.__UiElems.Vertical_Waveform_Combobox.currentText())(inputTime, yAmplitude, yFrequency, yPhase)
+            xWaveText = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
+            yWaveText = self.__UiElems.Vertical_Waveform_Combobox.currentText()
+            xFunction = lambda inputTime : waveformFunctions.get(xWaveText)(inputTime, xAmplitude, xFrequency, xPhase)
+            yFunction = lambda inputTime : waveformFunctions.get(yWaveText)(inputTime, yAmplitude, yFrequency, yPhase)
+            
+            # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
+            filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
+            # Finds fastest axis
+            fastestPhase     = yPhase
+            fastestFrequency = yFrequency
+            fastestWaveText  = yWaveText
+            if xFrequency > yFrequency:
+                fastestPhase     = xPhase
+                fastestFrequency = xFrequency
+                fastestWaveText  = xWaveText
+            # Creates filter, definition of waveform functions is falling edge if less than period / 2
+            fastestPeriod   = (1.0 / fastestFrequency)
+            filterFunction  = None
+            filterCenter  = (fastestPeriod * (0.5 + fastestPhase)) # TODO does not handle phases greater than +0.5 or less than -0.5 atm
+            if not filteringText == "All" and not fastestWaveText == "Sawtooth": # No filtering on sawtooth waveform or when none requested
+                if filteringText == "Rising Fast":
+                    def filterFunction(inputTime):
+                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad, should be handled by MCU
+                        return inputTime > filterCenter
+                elif filteringText == "Falling Fast":
+                    def filterFunction(inputTime):
+                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad, should be handled by MCU
+                        return inputTime < filterCenter
+                else:
+                    print("Error: Main_setSamplingReconstruction, bad sample filtering '%s'" % (filteringText))
+                    return
+            
+            # Assigns filter function
+            if xFrequency > yFrequency:
+                xFilterFunction = filterFunction
+            else:
+                yFilterFunction = filterFunction
+        else:
+            print("Error: Main_setSamplingReconstruction, bad mode '%s'" % (currentLUTMode))
+            return
+        
+        # Sets filtering function
+        self.__registerTh.setDataFilterX(xFilterFunction)        
+        self.__registerTh.setDataFilterY(yFilterFunction) 
+            
         # Sets reconstruction functions
-        if(xLambda is not None and yLambda is not None):
-            self.__registerTh.setDataTranslateX(xLambda)
-            self.__registerTh.setDataTranslateY(yLambda)
+        if(xFunction is not None and yFunction is not None):
+            self.__registerTh.setDataTranslateX(xFunction)
+            self.__registerTh.setDataTranslateY(yFunction)
+        else:
+            print("Error: Main_setSamplingReconstruction, bad translation functions")
 
     #
     # Description:
@@ -323,10 +381,13 @@ class TestBench(QMainWindow):
     #
     def setSamplingFrequency(self): # TODO
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz, need to provide hz
-        self.__dataTh.setPollFrequency((newFrequency / Const.ADC_BUFFERSIZE) * 1.5)
+        self.__dataTh.setPollFrequency((newFrequency / Const.ADC_BUFFERSIZE) * 5)
         self.__MCUInterface.setAdcFrequency(newFrequency)
         if(self.__MCUInterface.isScanning()):
             self.__MCUInterface.pauseEvents()
+            self.__dataTh.halt()
+            self.__dataTh.commence()
+            self.__DequeDataToRegister.clear()
             self.__MCUInterface.beginEvents()
 
 if __name__ == "__main__":
