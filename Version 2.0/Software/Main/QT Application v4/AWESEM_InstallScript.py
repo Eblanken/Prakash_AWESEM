@@ -9,6 +9,8 @@
 #   NOTE: Please run me as an administrator!
 #
 
+# TODO not really working atm, feel free to fix if you want, commands are fine though if entered manually in prompt with admin powers
+
 import conda.cli
 
 conda.cli.main('conda', 'install',  '-y', 'pyserial')

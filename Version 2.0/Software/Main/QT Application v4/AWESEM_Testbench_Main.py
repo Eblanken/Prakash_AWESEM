@@ -18,7 +18,10 @@
 #      Simple elastix:     https://simpleelastix.github.io
 #
 #   To successfully run this application
-#   download the following: Anaconda, pyqt (installed using conda), numpy-indexed
+#   download the following (make sure to run as admin, see script): 
+#       - Anaconda (takes care of most stuff)
+#       - numpy-indexed (go to conda prompt and type "conda install numpy-indexed -c conda-forge")
+#       - pyserial (go to conda prompt and type "conda install pyserial")
 #
 #   Notes:
 #       - Attempted to use mpipe but worked inconsistently on my windows laptop
@@ -26,24 +29,25 @@
 #   Moving Forward:
 #       - Work on and integrate analysis module. Use simpleitk
 #       - Find a framework to make preformance timing easier
+#       - Rebuild GUI, think of good way to start/stop scanning, take photos, etc.
+#         maybe look at Prof. Pease's microscope in greater detail.
 #
 #   TODO:
 #       - Only 5 of the 6 default settings for driving waveform trigger a callback when setting defaults, should check everything else as well
 #       - Seems like the scrolling message box does not update until a user interacts with it,
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
-#       - Serial is bad on mac (may not be fixable / may be just my mac,
+#       - Serial is bad on mac (may not be fixable / may be just my mac),
 #         Stroffgen has had simililar problems and has not been able to solve)
-#       - MPipe would be nice but appears to be broken on my windows machine / not cooperative on mac either
 #       - Random offset in sample timing upon initialization in MCU due to architecture of audio library, may require heavy modifications
 #           - Was able to get to partially work by changing phase_accumulator in waveform object, sill jumpy though. Also had to introduce manual delay
+#       - Need to set phase offset on teensy side for triangle, sine, etc. to match definition
+#         client side which has falling for first half rising for second (not standard definition, makes filtering easier)
 
 #from   time                          import perf_counter
 from   collections                   import deque
 import sys
 import numpy
-import numpy_indexed
-from   threading                     import Lock
 from   matplotlib                    import cm
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
@@ -110,7 +114,7 @@ class TestBench(QMainWindow):
         self.__MCUInterface = AWESEM_PiPion_Interface()
         self.__registerTh   = Register.Register(self.__DequeDataToRegister, self.updateQTImage)
         self.__dataTh       = Data.DataIn(self.__MCUInterface, self.__DequeDataToRegister)
-
+        
         self.setupTheUi()
         self.setDefaults()
 
