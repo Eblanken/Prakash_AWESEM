@@ -12,7 +12,7 @@
 
 #include "DacManager.hpp"
 #include "Arduino.h"
-#include "Audio.h"
+#include "StroffgenAudio_Audio.h"
 #include "IntervalTimer.h"
 
 #define MICROSFROMFREQ(frequency) ((float) 1000000.0 / (float) frequency)
@@ -23,17 +23,19 @@ IntervalTimer            AUpdater;
 IntervalTimer            BUpdater;
 elapsedMicros            aDuration;
 elapsedMicros            bDuration;
-float                    channelAFrequency = 1.0; // Frequency in hertz
-float                    channelBFrequency = 0.5; // Frequency in hertz
-uint8_t                  channelAWaveform  = 3; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-uint8_t                  channelBWaveform  = 3; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-float                    channelAMagnitude = 0.1; // Magnitude relative to reference, [0 - 1] * vRef
-float                    channelBMagnitude = 0.1; // Magnitude relative to reference, [0 - 1] * vRef
+float                    channelAFrequency = 35.0; // Frequency in hertz
+float                    channelBFrequency = 0.05; // Frequency in hertz
+uint8_t                  channelAWaveform  = 1; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+uint8_t                  channelBWaveform  = 1; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+float                    channelAMagnitude = 3.3; // Magnitude relative to reference, [0 - 1] * vRef
+float                    channelBMagnitude = 3.3; // Magnitude relative to reference, [0 - 1] * vRef
 AudioSynthWaveform       ChannelA;
 AudioSynthWaveform       ChannelB;
 AudioOutputAnalogStereo  Dacs;
 AudioConnection          PatchCord1(ChannelA, 0, Dacs, 1);
 AudioConnection          PatchCord2(ChannelB, 0, Dacs, 0);
+bool                     debugAToggleOnPeriod = false;
+bool                     debugBToggleOnPeriod = false;
 
 //----------------------- Functions ----------------------
 
@@ -54,6 +56,12 @@ void Dac_init() {
   Dacs.analogReference(DAC_REFERENCE);
   AUpdater.priority(DAC_APRIORITY);
   BUpdater.priority(DAC_BPRIORITY);
+  #ifdef DAC_DEBUG
+  pinMode(DAC_DEBUG_PIN_A, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_B, OUTPUT);
+  digitalWrite(DAC_DEBUG_PIN_A, LOW);
+  digitalWrite(DAC_DEBUG_PIN_B, LOW);
+  #endif
 }
 
 /*
@@ -205,7 +213,11 @@ void Dac_pause() {
  *  Resets the A timer at the end of the last A period.
  */
 void Dac_updateATimer() {
-  ChannelA.phase(0);
+  #ifdef DAC_DEBUG
+  digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
+  debugAToggleOnPeriod = !debugAToggleOnPeriod;
+  #endif
+  // Tried to call restart() on the channel here earlier but calling continuously causes issues, better to call once.
   aDuration = 0;
 }
 
@@ -214,7 +226,10 @@ void Dac_updateATimer() {
  *  Resets the B timer at the end of the last B period.
  */
 void Dac_updateBTimer() {
-  ChannelB.phase(0);
+  #ifdef DAC_DEBUG
+  digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
+  debugAToggleOnPeriod = !debugAToggleOnPeriod;
+  #endif
   bDuration = 0;
 }
 
@@ -224,17 +239,23 @@ void Dac_updateBTimer() {
  *  made since the last call.
  */
 void Dac_resume() { // TODO verify restart order
+  cli();
   ChannelA.begin(channelAWaveform);
   ChannelB.begin(channelBWaveform); 
   ChannelA.frequency(channelAFrequency);
   ChannelB.frequency(channelBFrequency);
   ChannelA.amplitude(channelAMagnitude);
   ChannelB.amplitude(channelBMagnitude);
+  ChannelA.phase(180);
+  ChannelB.phase(180);
   aDuration = 0;
+  ChannelA.restart();
+  delay(8); // TODO I was found empirically, needs to be redone in microseconds and with more samples, maybe better alternative to restart required
   AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
-  ChannelA.phase(0);
   bDuration = 0;
+  ChannelB.restart();
+  delay(8);
   BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
-  ChannelB.phase(0);
+  sei();
 }
 

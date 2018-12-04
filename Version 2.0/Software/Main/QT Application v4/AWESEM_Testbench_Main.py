@@ -32,10 +32,11 @@
 #       - Seems like the scrolling message box does not update until a user interacts with it,
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
-#       - GUI Scaling is bad on windows, serial is bad on mac (may not be fixable / may be jus my mac,
+#       - Serial is bad on mac (may not be fixable / may be just my mac,
 #         Stroffgen has had simililar problems and has not been able to solve)
 #       - MPipe would be nice but appears to be broken on my windows machine / not cooperative on mac either
-#       - Random offset in sample timing upon initialization in MCU (at least in fast axis, bad setting of the offset intervalCounter)
+#       - Random offset in sample timing upon initialization in MCU due to architecture of audio library, may require heavy modifications
+#           - Was able to get to partially work by changing phase_accumulator in waveform object, sill jumpy though. Also had to introduce manual delay
 
 #from   time                          import perf_counter
 from   collections                   import deque
@@ -53,6 +54,11 @@ import AWESEM_Constants              as Const
 import AWESEM_Data                   as Data
 import AWESEM_Register               as Register
 import AWESEM_Analysis               as Analysis
+
+if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 # Used for redirecting console output
 class Stream(QObject):
@@ -228,7 +234,9 @@ class TestBench(QMainWindow):
     #   Brings up dialog to save the image currently on the monitor to the disk.
     #
     def saveImage(self):
-        print("Saving Not Implimented") # TODO Saving
+        print("Save image implemented as clear screen.") # TODO saving
+        self.__ScanImage = QImage('grid.png')
+        self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     #
     # Description:
@@ -307,8 +315,8 @@ class TestBench(QMainWindow):
         yPhase          = self.__UiElems.Sampling_Phase_Vertical_Spinbox.value()
         xFrequency      = self.__UiElems.Horizontal_Frequency_Spinbox.value() # Spinbox is hz
         yFrequency      = self.__UiElems.Vertical_Frequency_Spinbox.value()   # Spinbox is hz
-        xAmplitude      = self.__UiElems.Plotter_Label.width() * 0.5  # Fits into display image, centered in middle
-        yAmplitude      = self.__UiElems.Plotter_Label.height() * 0.5 # Fits into display image, centered in middle
+        xAmplitude      = Const.RES_W * 0.5  # Fits into display image, centered in middle
+        yAmplitude      = Const.RES_H * 0.5 # Fits into display image, centered in middle
         currentLUTMode  = self.__UiElems.Sampling_LUT_Combobox.currentText()
         # TODO add image analysis distortion correction mode
         if(currentLUTMode == "Linear"):
@@ -381,7 +389,7 @@ class TestBench(QMainWindow):
     #
     def setSamplingFrequency(self): # TODO
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz, need to provide hz
-        self.__dataTh.setPollFrequency((newFrequency / Const.ADC_BUFFERSIZE) * 5)
+        self.__dataTh.setPollFrequency((newFrequency / self.__MCUInterface.getBufferSize()) * 5)
         self.__MCUInterface.setAdcFrequency(newFrequency)
         if(self.__MCUInterface.isScanning()):
             self.__MCUInterface.pauseEvents()

@@ -19,6 +19,10 @@
  *  
  * TODO:
  *  - When events halt, debugging lines should fall
+ *  - Major, altering phase etc. in interrupts in DAC in attempt to synchronize not working. Discussion here:
+ *    https://forum.pjrc.com/threads/54370-Waveform-begin-no-longer-resets-the-wave?highlight=phase
+ *    Solution was to modify the phase-accumulator instead of the phase (phase modification relative to current value), still looks jittery though...
+ *    https://github.com/PaulStoffregen/Audio/pull/275/files
  */
 
 //----------------------------- Command List ----------------------------- 

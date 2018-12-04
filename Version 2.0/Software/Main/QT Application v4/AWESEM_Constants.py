@@ -21,8 +21,8 @@ pi = 3.1415926535
 mill = 1000000
 
 # Size of scan area
-RES_W = 500
-RES_H = 500
+RES_W = 250
+RES_H = 250
 
 # Defaults
 DEFAULT_ADC_SAMPLEFREQUENCY = 40.0 # KHz, frequency of ADC sampling.
@@ -48,5 +48,4 @@ PIX_PER_UPDATE      = 25000
 DISP_PERIOD         = 1000 #?
 
 # Data Thread Stats
-ADC_BUFFERSIZE              = 1024  # NOTE: Check the PiPion firmware before changing this.
 BUFFLEN_DATA_TO_REGISTER    = 256

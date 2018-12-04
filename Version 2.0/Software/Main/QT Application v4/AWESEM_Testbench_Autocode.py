@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 598)
+        MainWindow.resize(900, 700)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.Vertical_Amplitude_Spinbox = QtWidgets.QDoubleSpinBox(self.centralwidget)
@@ -142,7 +142,7 @@ class Ui_MainWindow(object):
         self.Console_Preformance_Checkbox.setGeometry(QtCore.QRect(620, 500, 91, 20))
         self.Console_Preformance_Checkbox.setObjectName("Console_Preformance_Checkbox")
         self.Plotter_Label = QtWidgets.QLabel(self.centralwidget)
-        self.Plotter_Label.setGeometry(QtCore.QRect(0, 0, 511, 491))
+        self.Plotter_Label.setGeometry(QtCore.QRect(0, 0, 500, 500))
         self.Plotter_Label.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.Plotter_Label.setText("")
         self.Plotter_Label.setObjectName("Plotter_Label")
@@ -211,7 +211,7 @@ class Ui_MainWindow(object):
         self.Horizontal_Waveform_Combobox.setItemText(2, _translate("MainWindow", "Sawtooth"))
         self.Vertical_Amplitude_Label.setText(_translate("MainWindow", "Amplitude (Vpp)"))
         self.Vertical_Frequency_Label.setText(_translate("MainWindow", "Frequency (Hz)"))
-        self.Save_Pushbutton.setText(_translate("MainWindow", "Save Image"))
+        self.Save_Pushbutton.setText(_translate("MainWindow", "Clear Screen"))
         self.Sampling_Title_Label.setText(_translate("MainWindow", "Sampling"))
         self.Sampling_Frequency_Label.setText(_translate("MainWindow", "Frequency (kHz)"))
         self.Sampling_Averages_Label.setText(_translate("MainWindow", "Averages"))
