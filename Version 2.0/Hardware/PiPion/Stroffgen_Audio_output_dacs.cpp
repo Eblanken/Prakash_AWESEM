@@ -25,7 +25,7 @@
  */
 
 #include <Arduino.h>
-#include "StroffgenAudio_output_dacs.h"
+#include "Stroffgen_Audio_output_dacs.h"
 #include "Stroffgen_pdb.h"
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)

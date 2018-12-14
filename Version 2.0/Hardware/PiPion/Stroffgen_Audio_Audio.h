@@ -34,7 +34,7 @@
 #error "The Audio Library only works with Teensy 3.X.  Teensy 2.0 is unsupported."
 #endif
 
-#include "DMAChannel.h"
+#include "Stroffgen_DMAChannel.h"
 #if !defined(DMACHANNEL_HAS_BEGIN) || !defined(DMACHANNEL_HAS_BOOLEAN_CTOR)
 #error "You need to update DMAChannel.h & DMAChannel.cpp"
 #error "https://github.com/PaulStoffregen/cores/blob/master/teensy3/DMAChannel.h"
@@ -58,7 +58,7 @@
 // include all the library headers, so a sketch can use a single
 // #include <Audio.h> to get the whole library
 //
-#include "StroffgenAudio_output_dacs.h"
-#include "StroffgenAudio_synth_waveform.h"
+#include "Stroffgen_Audio_output_dacs.h"
+#include "Stroffgen_Audio_synth_waveform.h"
 
 #endif

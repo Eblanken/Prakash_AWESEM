@@ -47,7 +47,7 @@
 #define DAC_BPRIORITY 2        //   for both axis for timing tracking.
 
 // Debugging
-#define DAC_DEBUG              // Uncomment to enable alternation whenever the waveform timing offsets are reset
+#define DAC_DEBUG              // > Uncomment to enable alternation whenever the waveform timing offsets are reset
 #define DAC_DEBUG_PIN_A 31     // > Provides square wave that alternates whenever offset reset is called for the A channel
 #define DAC_DEBUG_PIN_B 32     // > Provides square wave that alternates whenever offset reset is called for the B channel
 
@@ -66,7 +66,7 @@
 #define SERIAL_FLUSH   100  // > Timeout to discard data originally
 
 // Debugging
-#define SERIAL_DEBUG // > Uncomment to enabe
+#define SERIAL_DEBUG // > Uncomment to enabe serial debugging
 #define SERIAL_DEBUG_PIN_BUFFERSENDOFF 12 // > Alternates when a buffer is sent
 
 #endif

@@ -36,8 +36,6 @@ volatile bool lastOn = false;
 
 //----------------------- Public Functions ----------------------
 
-#define MICROSFROMFREQ(frequency) (1000000.0 / frequency)
-
 void Adc_samplePrep();
 
 /*

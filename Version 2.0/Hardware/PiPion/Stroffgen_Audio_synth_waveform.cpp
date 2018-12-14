@@ -25,9 +25,9 @@
  */
 
 #include <Arduino.h>
-#include "StroffgenAudio_synth_waveform.h"
+#include "Stroffgen_Audio_synth_waveform.h"
 #include "arm_math.h"
-#include "utility/dspinst.h"
+#include "Stroffgen_dspinst.h"
 
 
 // uncomment for more accurate but more computationally expensive frequency modulation

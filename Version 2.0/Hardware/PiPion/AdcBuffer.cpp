@@ -33,26 +33,6 @@ int32_t           numSamples                          = -1; // Needs to have at 
 
 /*
  * Description:
- *  Moves the head pointer up by one.
- *
- * Returns:
- *  Returns false if data was overwritten by this action, true otherwise.
- */
-bool headAdvance() {
-  headIndex++;
-  if(headIndex >= ADC_BUFFERQUEUESIZE) { // > Wraps back
-    headIndex = 0;
-  }
-  numSamples++;
-  if(numSamples >= ADC_BUFFERQUEUESIZE) {
-    tailRetreat(); // > Head index overwrote oldest data
-    return false;
-  }
-  return true;
-}
-
-/*
- * Description:
  *  Moves the tail pointer up by one.
  *
  * Returns:
@@ -66,6 +46,26 @@ bool tailRetreat() {
       tailIndex = 0;
     }
   } else {
+    return false;
+  }
+  return true;
+}
+
+/*
+ * Description:
+ *  Moves the head pointer up by one.
+ *
+ * Returns:
+ *  Returns false if data was overwritten by this action, true otherwise.
+ */
+bool headAdvance() {
+  headIndex++;
+  if(headIndex >= ADC_BUFFERQUEUESIZE) { // > Wraps back
+    headIndex = 0;
+  }
+  numSamples++;
+  if(numSamples >= ADC_BUFFERQUEUESIZE) {
+    tailRetreat(); // > Head index overwrote oldest data
     return false;
   }
   return true;

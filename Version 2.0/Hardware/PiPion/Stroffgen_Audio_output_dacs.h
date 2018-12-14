@@ -24,25 +24,30 @@
  * THE SOFTWARE.
  */
 
-#ifndef AudioControl_h_
-#define AudioControl_h_
+#ifndef output_dacs_h_
+#define output_dacs_h_
 
-#include <stdint.h>
+#include "Arduino.h"
+#include "Stroffgen_AudioStream.h"
+#include "Stroffgen_DMAChannel.h"
 
-// A base class for all Codecs, DACs and ADCs, so at least the
-// most basic functionality is consistent.
-
-#define AUDIO_INPUT_LINEIN  0
-#define AUDIO_INPUT_MIC     1
-
-class AudioControl
+class AudioOutputAnalogStereo : public AudioStream
 {
 public:
-	virtual bool enable(void) = 0;
-	virtual bool disable(void) = 0;
-	virtual bool volume(float volume) = 0;      // volume 0.0 to 1.0
-	virtual bool inputLevel(float volume) = 0;  // volume 0.0 to 1.0
-	virtual bool inputSelect(int n) = 0;
+	AudioOutputAnalogStereo(void) : AudioStream(2, inputQueueArray) { begin(); }
+	virtual void update(void);
+	void begin(void);
+	void analogReference(int ref);
+private:
+	static audio_block_t *block_left_1st;
+	static audio_block_t *block_left_2nd;
+	static audio_block_t *block_right_1st;
+	static audio_block_t *block_right_2nd;
+	static audio_block_t block_silent;
+	static bool update_responsibility;
+	audio_block_t *inputQueueArray[2];
+	static DMAChannel dma;
+	static void isr(void);
 };
 
 #endif

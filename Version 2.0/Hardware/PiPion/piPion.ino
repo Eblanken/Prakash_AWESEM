@@ -11,7 +11,8 @@
  *  The AdcManager class internally maintains sample buffers and allows
  *  for transfers. The DacManager class keeps track of the waveform outputs.
  *  I tried to use messageCMD but there seems to be no easy way to
- *  pass lists, which makes efficient transfer of sample buffers difficult.
+ *  pass arrays/custom structs efficiently, which makes efficient transfer of sample buffers difficult.
+ *  I ended up just implementing my own thing and it works ok.
  *
  * Install List:
  *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html

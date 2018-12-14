@@ -13,7 +13,7 @@
 #include "Constants.hpp"
 #include "DacManager.hpp"
 #include "Arduino.h"
-#include "StroffgenAudio_Audio.h"
+#include "Stroffgen_Audio_Audio.h"
 #include "IntervalTimer.h"
 
 //----------------------- Internal Variables ---------------------
@@ -240,7 +240,7 @@ void Dac_updateBTimer() {
  *  made since the last call.
  */
 void Dac_resume() { // TODO verify restart order
-  cli();
+  AudioNoInterrupts();
   ChannelA.begin(channelAWaveform);
   ChannelB.begin(channelBWaveform);
   ChannelA.frequency(channelAFrequency);
@@ -257,5 +257,5 @@ void Dac_resume() { // TODO verify restart order
   ChannelB.restart();
   delay(8);
   BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
-  sei();
+  AudioInterrupts();
 }

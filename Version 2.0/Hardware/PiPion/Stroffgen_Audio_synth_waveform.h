@@ -28,7 +28,7 @@
 #define synth_waveform_h_
 
 #include <Arduino.h>
-#include "AudioStream.h"
+#include "Stroffgen_AudioStream.h"
 #include "arm_math.h"
 
 // waveforms.c
