@@ -10,12 +10,11 @@
  *  This is the implementation of functions for the DAC.
  */
 
+#include "Constants.hpp"
 #include "DacManager.hpp"
 #include "Arduino.h"
 #include "StroffgenAudio_Audio.h"
 #include "IntervalTimer.h"
-
-#define MICROSFROMFREQ(frequency) ((float) 1000000.0 / (float) frequency)
 
 //----------------------- Internal Variables ---------------------
 
@@ -23,12 +22,12 @@ IntervalTimer            AUpdater;
 IntervalTimer            BUpdater;
 elapsedMicros            aDuration;
 elapsedMicros            bDuration;
-float                    channelAFrequency = 35.0; // Frequency in hertz
-float                    channelBFrequency = 0.05; // Frequency in hertz
-uint8_t                  channelAWaveform  = 1; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-uint8_t                  channelBWaveform  = 1; // Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-float                    channelAMagnitude = 3.3; // Magnitude relative to reference, [0 - 1] * vRef
-float                    channelBMagnitude = 3.3; // Magnitude relative to reference, [0 - 1] * vRef
+float                    channelAFrequency = DAC_DEFAULT_FREQUENCY_A; // > Frequency in hertz
+float                    channelBFrequency = DAC_DEFAULT_FREQUENCY_B; // > Frequency in hertz
+uint8_t                  channelAWaveform  = DAC_DEFAULT_WAVEFORM_A;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+uint8_t                  channelBWaveform  = DAC_DEFAULT_WAVEFORM_B;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+float                    channelAMagnitude = DAC_DEFAULT_MAGNITUDE_A; // > Magnitude relative to reference, [0 - 1] * vRef
+float                    channelBMagnitude = DAC_DEFAULT_MAGNITUDE_B; // > Magnitude relative to reference, [0 - 1] * vRef
 AudioSynthWaveform       ChannelA;
 AudioSynthWaveform       ChannelB;
 AudioOutputAnalogStereo  Dacs;
@@ -67,11 +66,11 @@ void Dac_init() {
 /*
  * Description:
  *  Sets the frequency of the given DAC channel in hertz.
- *  
+ *
  * Parameters:
  *  'targetChannel' (dacChannel)    Which channel to update.
  *  'newFrequency'  (float [hertz]) Frequency at which to play the waveform
- *  
+ *
  * Note:
  *  Changes are not applied until after pause and resume are called.
  */
@@ -89,7 +88,7 @@ bool Dac_setFrequency(uint8_t targetChannel, float newFrequency) {
 /*
  * Description:
  *  Returns the frequency of the interval timer in microseconds.
- *  
+ *
  * Parameters:
  *  'targetChannel' The channel to retrieve the frequency from
  */
@@ -105,7 +104,7 @@ float Dac_getFrequency(uint8_t targetChannel) {
 /*
  * Description:
  *  Sets the magnitude in volts of the given dac channel.
- *  
+ *
  * Note:
  *  Is not applied until pause and resume is called.
  */
@@ -127,9 +126,9 @@ bool Dac_setMagnitude(uint8_t targetChannel, float magnitude) {
 /*
  * Description:
  *  Returns the magnitude of the target dac channel in volts.
- *  
+ *
  * Parameters:
- *  'targetChannel' (dacChannel) Which channel to request the magnitude from.  
+ *  'targetChannel' (dacChannel) Which channel to request the magnitude from.
  */
 float Dac_getMagnitude(uint8_t targetChannel) {
   if(targetChannel == 0) {
@@ -143,10 +142,10 @@ float Dac_getMagnitude(uint8_t targetChannel) {
 /*
  * Description:
  *  Sets the waveform of the target channel.
- * 
+ *
  * Parameters:
  *  'targetChannel' The channel to set the waveform for.
- *  
+ *
  * Note:
  *  Changes will not take effect until pause and resume are called.
  */
@@ -176,9 +175,9 @@ uint8_t Dac_getWaveform(uint8_t targetChannel) {
 
 /*
  * Description:
- *  Returns the time in microseconds since the last 
+ *  Returns the time in microseconds since the last
  *  A waveform began.
- * 
+ *
  * Returns:
  *  The time offset in microseconds.
  */
@@ -188,9 +187,9 @@ uint32_t Dac_getAOffsetMicros() {
 
 /*
  * Description:
- *  Returns the time in microseconds since the last 
+ *  Returns the time in microseconds since the last
  *  B waveform began.
- *  
+ *
  * Returns:
  *  The time offset in microseconds.
  */
@@ -217,7 +216,9 @@ void Dac_updateATimer() {
   digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
   debugAToggleOnPeriod = !debugAToggleOnPeriod;
   #endif
-  // Tried to call restart() on the channel here earlier but calling continuously causes issues, better to call once.
+  // > Tried to call restart() on the channel here earlier but calling continuously
+  //   causes issues, better to call once. No observed timing drift relative to waveform,
+  //   so just get initial offset to be correct.
   aDuration = 0;
 }
 
@@ -227,8 +228,8 @@ void Dac_updateATimer() {
  */
 void Dac_updateBTimer() {
   #ifdef DAC_DEBUG
-  digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
-  debugAToggleOnPeriod = !debugAToggleOnPeriod;
+  digitalWrite(DAC_DEBUG_PIN_B, debugBToggleOnPeriod);
+  debugBToggleOnPeriod = !debugBToggleOnPeriod;
   #endif
   bDuration = 0;
 }
@@ -241,7 +242,7 @@ void Dac_updateBTimer() {
 void Dac_resume() { // TODO verify restart order
   cli();
   ChannelA.begin(channelAWaveform);
-  ChannelB.begin(channelBWaveform); 
+  ChannelB.begin(channelBWaveform);
   ChannelA.frequency(channelAFrequency);
   ChannelB.frequency(channelBFrequency);
   ChannelA.amplitude(channelAMagnitude);
@@ -258,4 +259,3 @@ void Dac_resume() { // TODO verify restart order
   BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
   sei();
 }
-

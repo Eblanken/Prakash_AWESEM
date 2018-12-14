@@ -5,71 +5,72 @@
  * Date:   7/30/2018
  *
  * Description:
- *  This sketch uses a teensy 3.6 as both a sampling buffer 
+ *  This sketch uses a teensy 3.6 as both a sampling buffer
  *  and waveform generator for the AWESEM project. The main file
  *  maintains messanger commands and coordinates DAC and ADC work.
  *  The AdcManager class internally maintains sample buffers and allows
  *  for transfers. The DacManager class keeps track of the waveform outputs.
- *  I tried to use messageCMD but there seems to be no easy way to 
+ *  I tried to use messageCMD but there seems to be no easy way to
  *  pass lists, which makes efficient transfer of sample buffers difficult.
- *  
+ *
  * Install List:
  *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html
  *  - CircularBuffer: https://github.com/rlogiacco/CircularBuffer#retrieve-data
- *  
+ *
  * TODO:
  *  - When events halt, debugging lines should fall
  *  - Major, altering phase etc. in interrupts in DAC in attempt to synchronize not working. Discussion here:
  *    https://forum.pjrc.com/threads/54370-Waveform-begin-no-longer-resets-the-wave?highlight=phase
  *    Solution was to modify the phase-accumulator instead of the phase (phase modification relative to current value), still looks jittery though...
- *    https://github.com/PaulStoffregen/Audio/pull/275/files
+ *    https://github.com/PaulStoffregen/Audio/pull/275/files. There is also still a non-trivial delay from setting the phase to zero to the response.
  */
 
-//----------------------------- Command List ----------------------------- 
+//----------------------------- Command List -----------------------------
 
 /*
  * Serial commands: (float is 4 bytes, uint8_t and char are 1 byte etc.)
  *       All commands are in the format {byte1, byte2, [bytes3...bytesn (datatype)], [bytesn+1...bytesm (datatype)]
- * 
- * Note: You need to 'H' (halt) and 'B' (begin) to refresh settings. Set 
+ *
+ * Note: You need to 'H' (halt) and 'B' (begin) to refresh settings. Set
  *       parameters will not take effect until the system has been refreshed.
- * 
+ *
  * TODO now user asks for particular channel
- * 
+ *
  *  {'p'}                                                                 - Ping command, responds with 'A'
- * 
+ *
  *  {'f', [axis (uint8_t)]}                                               - Responds with the DAC frequency of the specified axis as a float in hertz. Format is {['A' if valid request, 'F' if invalid (only byte) (char)][frequency in hertz (float)]}
- *  
+ *
  *  {'F', [axis (uint8_t)], [frequency (float)]}                          - Sets the frequency of the given DAC axis in hertz, 0 for A and 1 for B. Responds with 'A' if succesful, 'F' otherwise.
- *  
+ *
  *  {'m', [axis (uint8_t)]}                                               - Responds with the magnitude of the specified axis. Format {['A' if valid request, 'F' if invalid (only byte) (char)][magnitude in volts (float)]}
- *  
+ *
  *  {'M', [axis (uint8_t)], [magnitude (float)]}                          - Sets the frequency of the given axis, 0 for A and 1 for B. Responds with 'A' if succesful.
- *  
+ *
  *  {'s'}                                                                 - Responds with the current sampling frequency in hertz. Format {[magnitude in volts (float)]}
- *  
- *  {'S', [sFrequency (float)]}                                           - Sets the sampling frequency in hertz. Response is 'A' if succesful 'F' if invalid.                        
- *  
+ *
+ *  {'S', [sFrequency (float)]}                                           - Sets the sampling frequency in hertz. Response is 'A' if succesful 'F' if invalid.
+ *
  *  {'u'}                                                                 - Responds with the current number of samples averaged per adc datapoint. Format {[samples averages (uint8_t]}
- *   
- *  {'U', [averages (uint8_t)]}                                           - Sets the number of samples averaged per adc datapoint. Response is 'A' if succesful, 'F' if invalid. 
- *  
+ *
+ *  {'U', [averages (uint8_t)]}                                           - Sets the number of samples averaged per adc datapoint. Response is 'A' if succesful, 'F' if invalid.
+ *
  *  {'w', [axis (uint8_t)]}                                               - Reads the current waveform, return format is Format {['A' if valid request, 'F' if invalid (only byte) (char)][0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8_t)]}
- *  
+ *
  *  {'W', [axis (uint8_t)], [waveform (0 sine, 1 saw, 3 tria) (uint8_t)]} - Sets the waveform used in scanning, responds with 'A' if succesful
- *  
- *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [scan number (uint8_t)], 
+ *
+ *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [scan number (uint8_t)],
  *                                                                          [duration of scan in microseconds (uint16_t)],
  *                                                                          [offset from last A start in microseconds (uint16_t)], [offset from last B start in microseconds (uint16_t)],
  *                                                                          [byte array of data of the length BUFFER_SIZE defined in AdcManager.h (uint8_t)]}
- *                                                                        
- *  {'B'}                                                                 - Begins all sampling and waveform outputs simultaneously, response is 'A'.                              
- *  
+ *
+ *  {'B'}                                                                 - Begins all sampling and waveform outputs simultaneously, response is 'A'.
+ *
  *  {'H'}                                                                 - Halts all sampling and waveform outputs simultaneously, response is 'A'.
  */
 
 //-------------------------- Included Libraries --------------------------
 
+#include "Constants.hpp"
 #include "DacManager.hpp"
 #include "AdcManager.hpp"
 
@@ -85,20 +86,6 @@ typedef union { // Makes printing and recieving uint32's easy
  uint8_t bytes[4];
 } UINT32UNION_t;
 
-// Misc debugging pins (includes built in LED)
-#define LED_RED      1
-#define LED_YELLOW   2
-#define LED_BLUE     3
-#define LED_GREEN    4
-#define LED_MAIN     13
-
-
-#define SERIAL_TIMEOUT 1000 // Timeout for serial in milliseconds
-#define SERIAL_FLUSH   100  // Timeout to discard data originally
-
-#define SERIAL_DEBUG // Uncomment to enabe
-#define SERIAL_DEBUG_PIN_BUFFERSENDOFF 12 // Alternates when a buffer is sent
-
 #ifdef SERIAL_DEBUG
 volatile bool lastSentOn = false;
 #endif
@@ -112,10 +99,12 @@ volatile bool lastSentOn = false;
  */
 void debugInit() {
   pinMode(LED_MAIN, OUTPUT);
+  /*
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_YELLOW, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
+  */
   digitalWriteFast(LED_MAIN, LOW);
   #ifdef SERIAL_DEBUG
   pinMode(SERIAL_DEBUG_PIN_BUFFERSENDOFF, OUTPUT);
@@ -196,12 +185,12 @@ uint32_t getSerialUint32() {
 /*
  * Description:
  *  Reads a command string to return the current DAC waveform frequency.
- *  
+ *
  * Parameters:
  *  'parameterString' Format is "f".
- * 
+ *
  * Response:
- *  Responds with the DAC frequencies in the format {(float) freqA, (float) freqB} 
+ *  Responds with the DAC frequencies in the format {(float) freqA, (float) freqB}
  *  as 4 byte floats in hertz.
  */
 void parseGetDacFrequency() {
@@ -303,9 +292,9 @@ void parseSetDacWaveform() {
   * Description:
   *   Reads a command string and responds with the
   *   sampling frequency of the device.
-  * 
+  *
   * Response:
-  *   Responds with the DAC frequencies in the format 
+  *   Responds with the DAC frequencies in the format
   *   freqA then freqB as floats in hertz as raw bytes.
   */
 void parseGetSFrequency() {
@@ -373,7 +362,7 @@ void parseGetBuffer() {
     Serial.write(aStartVal.bytes, 4); // Start relative to last A start (microSeconds)
     Serial.write(bStartVal.bytes, 4); // Start relative to last B start (microSeconds)
     Serial.write(durationVal.bytes, 4); // Duration (microSeconds)
-    Serial.write(newData->data, ADC_SAMPLESIZE); // May be inefficient, TODO is there a way to pass a buffer pointer?
+    Serial.write(newData->data, ADC_BUFFERSIZE); // May be inefficient, TODO is there a way to pass a buffer pointer?
     #ifdef SERIAL_DEBUG
     digitalWriteFast(SERIAL_DEBUG_PIN_BUFFERSENDOFF, lastSentOn);
     lastSentOn = !lastSentOn;
@@ -386,7 +375,7 @@ void parseGetBuffer() {
 
 /*
  * Description:
- *  Reads a command string and starts all scanning and 
+ *  Reads a command string and starts all scanning and
  *  the DAC output.
  */
 void parseStartEvents() {
@@ -398,7 +387,7 @@ void parseStartEvents() {
 
 /*
  * Description:
- *  Reads a command string and stops all scanning and 
+ *  Reads a command string and stops all scanning and
  *  the DAC output. Note that this also resets the ADC
  *  buffer and starts off with a fresh start.
  */
@@ -462,7 +451,7 @@ void loop() {
         parseGetSAverages();
         break;
       case 'U': // Sets number of averages per adc result
-        parseSetSAverages(); 
+        parseSetSAverages();
         break;
       case 'A': // Acquires current buffer
         parseGetBuffer();
@@ -481,4 +470,3 @@ void loop() {
     }
   }
 }
-

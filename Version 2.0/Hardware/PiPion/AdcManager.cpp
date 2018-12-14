@@ -7,15 +7,15 @@
  * Description:
  *  This is the implementation of the Adc management methods. See the
  *  header file for description and intended use.
- *  
+ *
  * Note:
- *  This implementation uses interval timers to sample from the ADC, 
+ *  This implementation uses interval timers to sample from the ADC,
  *  a faster implementation would use continuous conversion and interrupts.
  */
 
+#include "Constants.hpp"
 #include "AdcManager.hpp"
 #include "DacManager.hpp"
-#include "AdcBuffer.hpp"
 #include "Arduino.h"
 #include "ADC.h"
 #include "IntervalTimer.h"
@@ -24,8 +24,8 @@
 
 IntervalTimer  AdcSampleTimer;
 ADC            Adc;
-uint8_t        adcAverages = ADC_AVERAGES;
-float          adcSampleFrequency = ADC_SAMPLEFREQUENCY;
+uint8_t        adcAverages = ADC_DEFAULT_AVERAGES;
+float          adcSampleFrequency = ADC_DEFAULT_SAMPLEFREQUENCY;
 elapsedMicros  duration;
 uint32_t       totalPacketCount = 0;
 uint32_t       currentSampleCount = 0;
@@ -60,18 +60,18 @@ void Adc_init() {
 /*
  * Description:
  *  Returns a pointer to the most recent sampleBuffer struct.
- * 
+ *
  * Returns:
  *  Pointer to the latest and greatest.
  */
 sampleBuffer * Adc_getLatestBuffer() {
-  return AdcBuffer_getTail();            
+  return AdcBuffer_getTail();
 }
 
 /*
  * Description:
  *  Sets the frequency of the interval timer in microseconds.
- * 
+ *
  * Note:
  *  Changes are not applied until pause and resume are called.
  */
@@ -89,7 +89,7 @@ float Adc_getFrequency() {
 
 /*
  * Description:
- * 
+ *
  */
 uint8_t Adc_getAverages() {
   return adcAverages;
@@ -98,7 +98,7 @@ uint8_t Adc_getAverages() {
 /*
  * Description:
  *  Sets the number of averages, value must be 0, 4, 8, 16 or 32.
- * 
+ *
  * Parameters:
  *  'newAverages' The number of samples per adc result.
  */
@@ -155,7 +155,7 @@ void adc0_isr() {
   #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
   digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, LOW);
   #endif
-  if(currentSampleCount >= ADC_SAMPLESIZE) {
+  if(currentSampleCount >= ADC_BUFFERSIZE) {
     #ifdef ADC_DEBUG
     digitalWriteFast(ADC_DEBUG_PIN_BUFFERXCHANGE, lastOn);
     lastOn = !lastOn;
@@ -169,4 +169,3 @@ void adc0_isr() {
     currentSample->bStart = Dac_getBOffsetMicros();
   }
 }
-

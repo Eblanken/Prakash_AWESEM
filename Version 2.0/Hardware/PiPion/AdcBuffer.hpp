@@ -11,7 +11,18 @@
 #ifndef ADCBUFFER_H
 #define ADCBUFFER_H
 
-#include "AdcManager.hpp"
+#include "Constants.hpp"
+#include "Arduino.h"
+
+//------------------------ Structs ----------------------
+
+typedef struct {
+  uint32_t number;
+  uint32_t aStart;
+  uint32_t bStart;
+  uint32_t duration;
+  uint8_t  data[ADC_BUFFERSIZE];
+} sampleBuffer;
 
 //----------------------- Functions ----------------------
 
