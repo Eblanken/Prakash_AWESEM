@@ -313,7 +313,6 @@ void software_isr(void) // AudioStream::update_all()
 	ARM_DEMCR |= ARM_DEMCR_TRCENA;
 	ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 	uint32_t totalcycles = ARM_DWT_CYCCNT;
-	//digitalWriteFast(2, HIGH);
 	for (p = AudioStream::first_update; p; p = p->next_update) {
 		if (p->active) {
 			uint32_t cycles = ARM_DWT_CYCCNT;
@@ -325,10 +324,8 @@ void software_isr(void) // AudioStream::update_all()
 			if (cycles > p->cpu_cycles_max) p->cpu_cycles_max = cycles;
 		}
 	}
-	//digitalWriteFast(2, LOW);
 	totalcycles = (ARM_DWT_CYCCNT - totalcycles) >> 4;;
 	AudioStream::cpu_cycles_total = totalcycles;
 	if (totalcycles > AudioStream::cpu_cycles_total_max)
 		AudioStream::cpu_cycles_total_max = totalcycles;
 }
-

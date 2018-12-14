@@ -88,6 +88,19 @@ void AudioOutputAnalogStereo::begin(void)
 	dma.attachInterrupt(isr);
 }
 
+/*
+ * Description:
+ * 	MODDED: Erick Blankenberg, should force audio output to wait for / grab
+ * 		and greatest from the signal synth rather than wait to finish left + right
+ * 		or just right half of local buffer. Should fix variation in delay.
+ */
+void AudioOutputAnalogStereo::reset(void) {
+	block_left_1st  = NULL;
+	block_left_2nd  = NULL;
+	block_right_1st = NULL;
+	block_right_2nd = NULL;
+}
+
 void AudioOutputAnalogStereo::analogReference(int ref)
 {
 	// TODO: this should ramp gradually to the new DC level
