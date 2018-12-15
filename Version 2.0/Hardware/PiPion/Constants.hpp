@@ -37,8 +37,8 @@
 // Defaults tha can be changed by serial commands
 #define DAC_DEFAULT_FREQUENCY_A 35.0 // > Frequency in hertz
 #define DAC_DEFAULT_FREQUENCY_B 0.05 // > Frequency in hertz
-#define DAC_DEFAULT_WAVEFORM_A 1     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-#define DAC_DEFAULT_WAVEFORM_B 1     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+#define DAC_DEFAULT_WAVEFORM_A 0     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+#define DAC_DEFAULT_WAVEFORM_B 0     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
 #define DAC_DEFAULT_MAGNITUDE_A 3.3  // > Magnitude relative to reference, [0 - 1] * vRef
 #define DAC_DEFAULT_MAGNITUDE_B 3.3  // > Magnitude relative to reference, [0 - 1] * vRef
 // Standard
@@ -50,6 +50,7 @@
 #define DAC_DEBUG              // > Uncomment to enable alternation whenever the waveform timing offsets are reset
 #define DAC_DEBUG_PIN_A 31     // > Provides square wave that alternates whenever offset reset is called for the A channel
 #define DAC_DEBUG_PIN_B 32     // > Provides square wave that alternates whenever offset reset is called for the B channel
+#define DAC_DEBUG_PIN_R 30     // > Provides high notch while resetting is taking place. Rises on start falls on completion.
 
 // ----------------------- Constans for Main Function --------------------------
 

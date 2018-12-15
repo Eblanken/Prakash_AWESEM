@@ -89,11 +89,37 @@ void AudioOutputAnalogStereo::begin(void)
 }
 
 // MODDED: Erick Blankenberg, added ability to set DMA to known state.
-void AudioOutputAnalogStereo::reset(void)
-{
+void AudioOutputAnalogStereo::reset(void) {
+  while(dma.TCD->SADDR != dac_buffer); // TODO Synchronizing DMA position this way is truly horrific, need to find a better way
+  dma.disable();
+  /*
+  dma.TCD->SOFF = 4;
+  dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(DMA_TCD_ATTR_SIZE_32BIT) |
+    DMA_TCD_ATTR_DSIZE(DMA_TCD_ATTR_SIZE_16BIT);
+  dma.TCD->NBYTES_MLNO = DMA_TCD_NBYTES_MLOFFYES_NBYTES(4) | DMA_TCD_NBYTES_DMLOE |
+    DMA_TCD_NBYTES_MLOFFYES_MLOFF((&DAC0_DAT0L - &DAC1_DAT0L) * 2);
+  dma.TCD->SLAST = -sizeof(dac_buffer);
+  dma.TCD->DADDR = &DAC0_DAT0L;
+  dma.TCD->DOFF = &DAC1_DAT0L - &DAC0_DAT0L;
+  dma.TCD->CITER_ELINKNO = sizeof(dac_buffer) / 4;
+  dma.TCD->DLASTSGA = (&DAC0_DAT0L - &DAC1_DAT0L) * 2;
+  dma.TCD->BITER_ELINKNO = sizeof(dac_buffer) / 4;
+  dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+  dma.triggerAtHardwareEvent(DMAMUX_SOURCE_PDB);
+  update_responsibility = update_setup();
+  
+  
+	// Resets buffer
 	for(int index = 0; index < AUDIO_BLOCK_SAMPLES * 2; index++) {
-		dac_buffer[index]
+		dac_buffer[index] = 0; // TODO should redirect to block_silent (which is zero anyway but more readable)
 	}
+  */
+	// Resets stored blocks
+  if (block_left_1st)  { release(block_left_1st);  block_left_1st  = NULL; }
+  if (block_left_2nd)  { release(block_left_2nd);  block_left_2nd  = NULL; }
+  if (block_right_1st) { release(block_right_1st); block_right_1st = NULL; }
+  if (block_right_2nd) { release(block_right_2nd); block_right_2nd = NULL; }
+  dma.enable();
 }
 
 void AudioOutputAnalogStereo::analogReference(int ref)

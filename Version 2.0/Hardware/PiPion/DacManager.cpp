@@ -58,8 +58,10 @@ void Dac_init() {
   #ifdef DAC_DEBUG
   pinMode(DAC_DEBUG_PIN_A, OUTPUT);
   pinMode(DAC_DEBUG_PIN_B, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_R, OUTPUT);
   digitalWrite(DAC_DEBUG_PIN_A, LOW);
   digitalWrite(DAC_DEBUG_PIN_B, LOW);
+  digitalWrite(DAC_DEBUG_PIN_R, LOW);
   #endif
 }
 
@@ -236,26 +238,49 @@ void Dac_updateBTimer() {
 
 /*
  * Description:
+ *  Returns phase so that all waveforms start at lower value
+ *  and build up.
+ */
+float Dac_getSamplePhase(uint8_t channelAWaveform) {
+  switch(channelAWaveform) { // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+    case 0:
+      return 270.0;
+      break;
+    case 1:
+      return 180.0;
+      break;
+    case 3:
+      return 270.0;
+      break;
+  }
+  return 180;
+}
+
+/*
+ * Description:
  *  Re-enables the DAC output but also implements any changes
  *  made since the last call.
  */
 void Dac_resume() { // TODO verify restart order
   AudioNoInterrupts();
+  digitalWrite(DAC_DEBUG_PIN_R, HIGH);
   ChannelA.begin(channelAWaveform);
   ChannelB.begin(channelBWaveform);
   ChannelA.frequency(channelAFrequency);
   ChannelB.frequency(channelBFrequency);
   ChannelA.amplitude(channelAMagnitude);
   ChannelB.amplitude(channelBMagnitude);
-  ChannelA.phase(180);
-  ChannelB.phase(180);
-  aDuration = 0;
+  ChannelA.phase(Dac_getSamplePhase(channelAWaveform));
+  ChannelB.phase(Dac_getSamplePhase(channelBWaveform));
+  Dacs.reset();
   ChannelA.restart();
-  delay(8); // TODO I was found empirically, needs to be redone in microseconds and with more samples, maybe better alternative to restart required
-  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
-  bDuration = 0;
   ChannelB.restart();
-  delay(8);
-  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
   AudioInterrupts();
+  delayMicroseconds(1275); // > TODO: Was found empirically, the whole audio chain needs to be revised for better synch (reset all elements), currently has different offsets for each channel
+  aDuration = 0;           //         and generally is terrible. Currently occasionally is off by one block.
+  //delayMicroseconds(800);
+  bDuration = 0;
+  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
+  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
+  digitalWrite(DAC_DEBUG_PIN_R, LOW);
 }

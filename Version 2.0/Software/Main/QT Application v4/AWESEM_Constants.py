@@ -36,8 +36,8 @@ DEFAULT_HORZHZ = 0.05
 DEFAULT_VERTAM = 3.30 # Magnitude in volts
 DEFAULT_HORZAM = 3.30
 # Phase offsets for sample reconstruction
-DEFAULT_HORZPHASE = 0.5 # Fraction of period of waveform, positive delays reading (shifts forward)
-DEFAULT_VERTPHASE = 0.5
+DEFAULT_HORZPHASE = 0.0 # Fraction of period of waveform, positive delays reading (shifts forward)
+DEFAULT_VERTPHASE = 0.0
 
 
 # Resolution of generated waveform LUT

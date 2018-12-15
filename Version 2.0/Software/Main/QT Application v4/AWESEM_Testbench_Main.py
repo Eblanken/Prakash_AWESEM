@@ -218,7 +218,7 @@ class TestBench(QMainWindow):
                 number = number + 1
                 colorVector = self.__ColorMap(float(value[2]) / 255.0)
                 colorTool.setRgb(colorVector[0] * 255, colorVector[1] * 255, colorVector[2] * 255)
-                self.__ScanImage.setPixel(int(value[0]), int(value[1]), colorTool.rgb())
+                self.__ScanImage.setPixel(int(value[0]), self.__ScanImage.height() - int(value[1]), colorTool.rgb())
                 #print("Value: %d, %d, %d" % (int(value[0]), int(value[1]), colorTool.rgb()))
             self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
@@ -352,7 +352,7 @@ class TestBench(QMainWindow):
             # Creates filter, definition of waveform functions is falling edge if less than period / 2
             fastestPeriod   = (1.0 / fastestFrequency)
             filterFunction  = None
-            filterCenter  = (fastestPeriod * (0.5 + fastestPhase)) # TODO does not handle phases greater than +0.5 or less than -0.5 atm
+            filterCenter  = (fastestPeriod * 0.5) # TODO does not handle phases greater than +0.5 or less than -0.5 atm
             if not filteringText == "All" and not fastestWaveText == "Sawtooth": # No filtering on sawtooth waveform or when none requested
                 if filteringText == "Rising Fast":
                     def filterFunction(inputTime):

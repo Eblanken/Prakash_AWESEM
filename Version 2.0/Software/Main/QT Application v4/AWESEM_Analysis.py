@@ -84,7 +84,7 @@ def cos(inputTime, amplitude, frequency, phase, baseOffset = None):
         return None
     if baseOffset is None:
         baseOffset = amplitude
-    return amplitude * np.cos((inputTime * frequency - phase) * 2.0 * np.pi) + baseOffset
+    return amplitude * np.cos((inputTime * frequency - phase + 0.5) * 2.0 * np.pi) + baseOffset
 #
 # Description
 #   Returns the value of a triangle function for the given parameters, 
@@ -102,7 +102,7 @@ def triangle(inputTime, amplitude, frequency, phase, baseOffset = None):
         return None
     if baseOffset is None:
         baseOffset = amplitude
-    return ((2.0 * amplitude) / np.pi) * (np.arcsin(np.sin(((inputTime * frequency) - phase + 0.25) * 2.0 * np.pi))) + baseOffset
+    return ((2.0 * amplitude) / np.pi) * (np.arcsin(np.sin(((inputTime * frequency) - phase - 0.25) * 2.0 * np.pi))) + baseOffset
     
 #
 # Description
