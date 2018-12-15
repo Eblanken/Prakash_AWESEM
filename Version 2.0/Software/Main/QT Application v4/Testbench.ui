@@ -48,6 +48,9 @@
     <property name="minimum">
      <double>0.010000000000000</double>
     </property>
+    <property name="maximum">
+     <double>200.000000000000000</double>
+    </property>
     <property name="singleStep">
      <double>0.010000000000000</double>
     </property>
@@ -71,7 +74,7 @@
      <double>0.010000000000000</double>
     </property>
     <property name="maximum">
-     <double>99.000000000000000</double>
+     <double>200.000000000000000</double>
     </property>
     <property name="singleStep">
      <double>0.010000000000000</double>
@@ -237,9 +240,9 @@
    <widget class="QPushButton" name="Save_Pushbutton">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>230</x>
       <y>510</y>
-      <width>131</width>
+      <width>101</width>
       <height>32</height>
      </rect>
     </property>
@@ -310,34 +313,12 @@
      <string>Averages</string>
     </property>
    </widget>
-   <widget class="QDoubleSpinBox" name="Sampling_Averages_Spinbox">
-    <property name="geometry">
-     <rect>
-      <x>540</x>
-      <y>280</y>
-      <width>111</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="keyboardTracking">
-     <bool>false</bool>
-    </property>
-    <property name="decimals">
-     <number>0</number>
-    </property>
-    <property name="maximum">
-     <double>50.000000000000000</double>
-    </property>
-    <property name="value">
-     <double>20.000000000000000</double>
-    </property>
-   </widget>
    <widget class="QPushButton" name="Scan_Pushbutton">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>510</y>
-      <width>131</width>
+      <width>101</width>
       <height>32</height>
      </rect>
     </property>
@@ -587,6 +568,54 @@
       <string>Falling Horizontal</string>
      </property>
     </item>
+   </widget>
+   <widget class="QComboBox" name="Sampling_Averages_Combobox">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>280</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>0</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>4</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>8</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>16</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>32</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QPushButton" name="Clear_Pushbutton">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>510</y>
+      <width>101</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear Screen</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

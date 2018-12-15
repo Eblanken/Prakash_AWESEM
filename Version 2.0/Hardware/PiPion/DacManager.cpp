@@ -31,8 +31,8 @@ float                    channelBMagnitude = DAC_DEFAULT_MAGNITUDE_B; // > Magni
 AudioSynthWaveform       ChannelA;
 AudioSynthWaveform       ChannelB;
 AudioOutputAnalogStereo  Dacs;
-AudioConnection          PatchCord1(ChannelA, 0, Dacs, 1);
-AudioConnection          PatchCord2(ChannelB, 0, Dacs, 0);
+AudioConnection          PatchCord2(ChannelA, 0, Dacs, 0);
+AudioConnection          PatchCord1(ChannelB, 0, Dacs, 1);
 bool                     debugAToggleOnPeriod = false;
 bool                     debugBToggleOnPeriod = false;
 
