@@ -48,6 +48,7 @@
 from   collections                   import deque
 import sys
 import numpy
+import datetime
 from   matplotlib                    import cm
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
@@ -135,6 +136,7 @@ class TestBench(QMainWindow):
         # Scan Controls
         self.__UiElems.Scan_Pushbutton.clicked.connect(self.toggleScanning)
         self.__UiElems.Save_Pushbutton.clicked.connect(self.saveImage)
+        self.__UiElems.Clear_Pushbutton.clicked.connect(self.clearScreen)
 
         # Vertical Axis
         self.__UiElems.Vertical_Waveform_Combobox.currentTextChanged.connect(self.setWaveforms)
@@ -238,7 +240,10 @@ class TestBench(QMainWindow):
     #   Brings up dialog to save the image currently on the monitor to the disk.
     #
     def saveImage(self):
-        print("Save image implemented as clear screen.") # TODO saving
+        self.__ScanImage.save("Captures\Capture_%s" % (datetime.datetime.now()))
+
+
+    def clearScreen(self):
         self.__ScanImage = QImage('grid.png')
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
