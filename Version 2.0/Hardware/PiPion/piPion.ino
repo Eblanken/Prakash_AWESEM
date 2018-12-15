@@ -11,19 +11,28 @@
  *  The AdcManager class internally maintains sample buffers and allows
  *  for transfers. The DacManager class keeps track of the waveform outputs.
  *  I tried to use messageCMD but there seems to be no easy way to
- *  pass arrays/custom structs efficiently, which makes efficient transfer of sample buffers difficult.
- *  I ended up just implementing my own thing and it works ok.
+ *  pass arrays/custom structs efficiently, which makes efficient transfer of sample buffers to the coumputer difficult.
+ *  I ended up just implementing my own thing and it works well.
  *
  * Install List:
  *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html
- *  - CircularBuffer: https://github.com/rlogiacco/CircularBuffer#retrieve-data
  *
  * TODO:
  *  - When events halt, debugging lines should fall
- *  - Major, altering phase etc. in interrupts in DAC in attempt to synchronize not working. Discussion here:
- *    https://forum.pjrc.com/threads/54370-Waveform-begin-no-longer-resets-the-wave?highlight=phase
- *    Solution was to modify the phase-accumulator instead of the phase (phase modification relative to current value), still looks jittery though...
- *    https://github.com/PaulStoffregen/Audio/pull/275/files. There is also still a non-trivial delay from setting the phase to zero to the response.
+ *  - Synchronization between timing and phase of driving waveform is an issue.
+ *    > Originally setting phase had no effect, found out that this is because the "phase" is a phase offset rather than the actual current phase
+ *      in the waveform. Original discussion here:
+ *      -> https://forum.pjrc.com/threads/54370-Waveform-begin-no-longer-resets-the-wave?highlight=phase
+ *      -> Solution was to modify the phase-accumulator instead of the phase (phase modification relative to current value)
+ *         https://github.com/PaulStoffregen/Audio/pull/275/files.
+ *    > Once we were adjusting the actual progress into the waveform, it became clear that there was a significant latency when adjusting values and
+ *      that there was a non-trivial variance on the order of 20% of the waveform's total phase in some cases.
+ *        -> The audio library takes advantage of DMA and other peripherals efficiently by passing around large buffers of audio samples
+ *           rather than individual samples. This is the source of the latency/variance. I was able to mitigate this by setting the buffer
+ *           size to 16 items.
+ *        -> The best solution would be to reset all of the items in the audio chain whenever we begin our DAC output so that everything
+ *           is in a known initial state. At that point we can adjust for the latency manually.
+ *            -> I tried to set the output dac to a known initial state by setting all of its stored buffers to null. 
  */
 
 //----------------------------- Command List -----------------------------
