@@ -88,6 +88,14 @@ void AudioOutputAnalogStereo::begin(void)
 	dma.attachInterrupt(isr);
 }
 
+// MODDED: Erick Blankenberg, added ability to set DMA to known state.
+void AudioOutputAnalogStereo::reset(void)
+{
+	for(int index = 0; index < AUDIO_BLOCK_SAMPLES * 2; index++) {
+		dac_buffer[index]
+	}
+}
+
 void AudioOutputAnalogStereo::analogReference(int ref)
 {
 	// TODO: this should ramp gradually to the new DC level
