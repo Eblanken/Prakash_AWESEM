@@ -324,8 +324,8 @@ class TestBench(QMainWindow):
         currentLUTMode  = self.__UiElems.Sampling_LUT_Combobox.currentText()
         # TODO add image analysis distortion correction mode
         if(currentLUTMode == "Linear"):
-            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, xPhase)
-            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, yPhase)
+            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, 0.0)
+            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, 0.0)
             
         elif currentLUTMode == "Axis Waveform":
             waveformFunctions = { # Values correspond to those on Teensy
@@ -336,17 +336,15 @@ class TestBench(QMainWindow):
             # Assigns waveform
             xWaveText = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
             yWaveText = self.__UiElems.Vertical_Waveform_Combobox.currentText()
-            xFunction = lambda inputTime : waveformFunctions.get(xWaveText)(inputTime, xAmplitude, xFrequency, xPhase)
-            yFunction = lambda inputTime : waveformFunctions.get(yWaveText)(inputTime, yAmplitude, yFrequency, yPhase)
+            xFunction = lambda inputTime : waveformFunctions.get(xWaveText)(inputTime, xAmplitude, xFrequency, 0.0)
+            yFunction = lambda inputTime : waveformFunctions.get(yWaveText)(inputTime, yAmplitude, yFrequency, 0.0)
             
             # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
             filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
             # Finds fastest axis
-            fastestPhase     = yPhase
             fastestFrequency = yFrequency
             fastestWaveText  = yWaveText
             if xFrequency > yFrequency:
-                fastestPhase     = xPhase
                 fastestFrequency = xFrequency
                 fastestWaveText  = xWaveText
             # Creates filter, definition of waveform functions is falling edge if less than period / 2
@@ -356,11 +354,11 @@ class TestBench(QMainWindow):
             if not filteringText == "All" and not fastestWaveText == "Sawtooth": # No filtering on sawtooth waveform or when none requested
                 if filteringText == "Rising Fast":
                     def filterFunction(inputTime):
-                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad, should be handled by MCU
+                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
                         return inputTime > filterCenter
                 elif filteringText == "Falling Fast":
                     def filterFunction(inputTime):
-                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad, should be handled by MCU
+                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
                         return inputTime < filterCenter
                 else:
                     print("Error: Main_setSamplingReconstruction, bad sample filtering '%s'" % (filteringText))
@@ -371,6 +369,10 @@ class TestBench(QMainWindow):
                 xFilterFunction = filterFunction
             else:
                 yFilterFunction = filterFunction
+                
+            # Assigns time offset
+            self.__registerTh.setDataOffsetX(xPhase * (1.0 / xFrequency))        
+            self.__registerTh.setDataOffsetY(yPhase * (1.0 / yFrequency)) 
         else:
             print("Error: Main_setSamplingReconstruction, bad mode '%s'" % (currentLUTMode))
             return

@@ -25,7 +25,7 @@ RES_W = 250
 RES_H = 250
 
 # Defaults
-DEFAULT_ADC_SAMPLEFREQUENCY = 40.0 # KHz, frequency of ADC sampling.
+DEFAULT_ADC_SAMPLEFREQUENCY = 30.0 # KHz, frequency of ADC sampling.
 # Default driving waveform
 DEFAULT_VERTWA = 1 # Combobox waveform index: 0 = Sine, 1 = Triangle, 2 = Sawtooth TODO no direct correspondance to combobox to waveform type on teensy
 DEFAULT_HORZWA = 1 
@@ -37,7 +37,7 @@ DEFAULT_VERTAM = 3.30 # Magnitude in volts
 DEFAULT_HORZAM = 3.30
 # Phase offsets for sample reconstruction
 DEFAULT_HORZPHASE = 0.0 # Fraction of period of waveform, positive delays reading (shifts forward)
-DEFAULT_VERTPHASE = 0.0
+DEFAULT_VERTPHASE = 0.11
 
 
 # Resolution of generated waveform LUT

@@ -36,6 +36,8 @@ class Register(threading.Thread):
     __DataFilterY                 = None
     __InputBuffer                 = None
     __StandardCallback            = None
+    __xOffset                     = 0.0
+    __yOffset                     = 0.0
 
     def __init__(self, inputQueue, outputCallback):
         threading.Thread.__init__(self)
@@ -73,6 +75,10 @@ class Register(threading.Thread):
         if filterY is None:
             filterY = self.__DataFilterY
 
+        # Applies offsets
+        newestBuffer[:, 0] = newestBuffer[:, 0] + self.__xOffset;
+        newestBuffer[:, 1] = newestBuffer[:, 1] + self.__yOffset;
+
         # Applies filter function
         boolX = numpy.ones(len(newestBuffer), dtype = bool)
         if filterX is not None:
@@ -94,7 +100,7 @@ class Register(threading.Thread):
 
     #
     # Description:
-    #   Filters the given data buffer by timestamps of the x (a) axis.
+    #   Filters the given data buffer by timestamps for the given access.
     #
     # Parameters:
     #   'filterFunction' Callback to filter a column array of timestamps in
@@ -106,16 +112,6 @@ class Register(threading.Thread):
             self.__DataFilterX = filterFunction
             return True
         return False
-    
-    #
-    # Description:
-    #   Filters the given data buffer by timestamps of the y (a) axis.
-    #
-    # Parameters:
-    #   'filterFunction' Callback to filter a column array of timestamps in
-    #                    milliseconds. Should return a boolean array.
-    #                    Set to None to disable filtering.
-    #
     def setDataFilterY(self, filterFunction):
         if(callable(filterFunction) or filterFunction is None):
             self.__DataFilterY = filterFunction
@@ -123,9 +119,23 @@ class Register(threading.Thread):
         return False
 
     #
+    # Description:
+    #   Adds the given value to the timestamp of the given axis in seconds.
+    #
+    # Parameters:
+    #   'offsetTime' Value to add to the timestamp in seconds.
+    #
+    def setDataOffsetX(self, offsetTime):
+        self.__xOffset = offsetTime
+        return True
+    def setDataOffsetY(self, offsetTime):
+        self.__yOffset = offsetTime
+        return True
+
+    #
     # Desccription:
     #   Sets the function used to translate the data times to position
-    #   along the X axis.
+    #   along the specified axis..
     #
     # Parameters:
     #   'translationFunction' Function that takes in a floating point time in seconds
@@ -135,16 +145,6 @@ class Register(threading.Thread):
         if(callable(translationFunction)):
             self.__DataTranslateX = translationFunction
             return True
-        return False
-    #
-    # Desccription:
-    #   Sets the function used to translate the data times to position
-    #   along the Y axis.
-    #
-    # Parameters:
-    #   'translationFunction' Function that takes in a floating point time in seconds
-    #                         and returns a floating point normalized value, 1.0 is maximum.
-    #
     def setDataTranslateY(self, translationFunction):
         if(callable(translationFunction)):
             self.__DataTranslateY = translationFunction

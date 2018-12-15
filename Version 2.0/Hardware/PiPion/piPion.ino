@@ -32,7 +32,11 @@
  *           size to 16 items.
  *        -> The best solution would be to reset all of the items in the audio chain whenever we begin our DAC output so that everything
  *           is in a known initial state. At that point we can adjust for the latency manually.
- *            -> I tried to set the output dac to a known initial state by setting all of its stored buffers to null. 
+ *            -> The output dac has two buffers per channel, which explains the variance. The variance was the difference between the constant assumed final DMA read 
+ *               position and the actual position depending on when exactly you stopped scanning. The solution was to add a function to clear the output dac buffers
+ *               and to reset the DMA address.
+ *            -> This should be done for all Audio entities.
+*             -> Manual offsets need to be adjusted.
  */
 
 //----------------------------- Command List -----------------------------
