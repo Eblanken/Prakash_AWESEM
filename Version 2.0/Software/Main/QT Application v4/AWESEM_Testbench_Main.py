@@ -240,7 +240,8 @@ class TestBench(QMainWindow):
     #   Brings up dialog to save the image currently on the monitor to the disk.
     #
     def saveImage(self):
-        self.__ScanImage.save("Captures\Capture_%s" % (datetime.datetime.now()))
+        if not self.__ScanImage.save("Captures\Capture_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]")), format = "BMP"):
+            print("Failed to Save Image")
 
 
     def clearScreen(self):
