@@ -110,7 +110,6 @@ class DataIn(threading.Thread):
     #   Stops acquiring sample blocks for continous streaming.
     #
     def halt(self):
-        self.justHalted = 0 # TODO debug thingy please kill me
         self.__DoSample = False
 
     #
@@ -118,5 +117,4 @@ class DataIn(threading.Thread):
     #   Starts acquiring sample blocks for continuous streaming.
     #
     def commence(self):
-        self.justHalted = 0
         self.__DoSample = True

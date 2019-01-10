@@ -11,11 +11,12 @@
 #   for an overview of the system.
 #
 #   General:
-#      PyQt tutorial:      http://pythonforengineers.com/your-first-gui-app-with-python-and-pyqt/
-#      Redirecting prints: https://stackoverflow.com/questions/44432276/print-out-python-console-output-to-qtextedit
+#      PyQt tutorial:       http://pythonforengineers.com/your-first-gui-app-with-python-and-pyqt/
+#      Redirecting prints:  https://stackoverflow.com/questions/44432276/print-out-python-console-output-to-qtextedit
+#      Multithreading pref:
 #   Image processing:
-#      Simple Itk:         http://www.simpleitk.org
-#      Simple elastix:     https://simpleelastix.github.io
+#      Simple Itk:          http://www.simpleitk.org
+#      Simple elastix:      https://simpleelastix.github.io
 #
 #   To successfully run this application
 #   download the following (make sure to run as admin, see script): 
@@ -27,6 +28,8 @@
 #       - Attempted to use mpipe but worked inconsistently on my windows laptop
 #
 #   Moving Forward:
+#       - Apparently one thread is faster than two for data acquisition and handling, we
+#         should look into multiprocessing, even the raspberry pi has more than one core.
 #       - Work on and integrate analysis module. Use simpleitk
 #       - Find a framework to make preformance timing easier
 #       - Rebuild GUI, think of good way to start/stop scanning, take photos, etc.
@@ -44,7 +47,7 @@
 #       - Need to set phase offset on teensy side for triangle, sine, etc. to match definition
 #         client side which has falling for first half rising for second (not standard definition, makes filtering easier)
 
-#from   time                          import perf_counter
+from   time                          import perf_counter
 from   collections                   import deque
 import sys
 import numpy
@@ -56,7 +59,6 @@ from   PyQt5.QtWidgets               import *
 from   AWESEM_Testbench_Autocode     import Ui_MainWindow
 from   AWESEM_PiPion_Interface       import AWESEM_PiPion_Interface
 import AWESEM_Constants              as Const
-import AWESEM_Data                   as Data
 import AWESEM_Register               as Register
 import AWESEM_Analysis               as Analysis
 
@@ -99,27 +101,19 @@ class Stream(QObject):
 class TestBench(QMainWindow):
 
     __MCUInterface      = None
-    __dataTh            = None
     __registerTh        = None
-    __displayTh         = None
     __consoleOut        = None
     __ScanImage         = QImage('grid.png')
     __ColorMap          = cm.get_cmap('viridis')
     __UiElems           = None
 
-    __DequeDataToRegister = deque(maxlen = Const.BUFFLEN_DATA_TO_REGISTER)
-
     def __init__(self, *args, **kwargs):
         super(TestBench, self).__init__(*args, **kwargs)
         # Structure is MCU -(interface)-> dataTh -(double buffer)-> registerTh -(callback)-> monitor
         self.__MCUInterface = AWESEM_PiPion_Interface()
-        self.__registerTh   = Register.Register(self.__DequeDataToRegister, self.updateQTImage)
-        self.__dataTh       = Data.DataIn(self.__MCUInterface, self.__DequeDataToRegister)
-        
+        self.__registerTh   = Register.Register(self.updateQTImage, self.__MCUInterface)
         self.setupTheUi()
         self.setDefaults()
-
-        self.__dataTh.start()
         self.__registerTh.start()
 
     def __del__(self):
@@ -227,13 +221,12 @@ class TestBench(QMainWindow):
     def toggleScanning(self):
         if(self.__MCUInterface.isScanning()):
             self.__UiElems.Scan_Pushbutton.setText("Start Scanning")
-            self.__DequeDataToRegister.clear()
             self.__MCUInterface.pauseEvents()
-            self.__dataTh.halt()
+            self.__registerTh.halt()
         else:
             self.__UiElems.Scan_Pushbutton.setText("Stop Scanning")
             self.__MCUInterface.beginEvents()
-            self.__dataTh.commence()
+            self.__registerTh.commence()
 
     #
     # Description:
@@ -303,9 +296,6 @@ class TestBench(QMainWindow):
         # Refreshes MCU
         if(self.__MCUInterface.isScanning()): # If not scanning will take effect on startup anyway
             self.__MCUInterface.pauseEvents()
-            self.__DequeDataToRegister.clear()
-            self.__dataTh.halt()
-            self.__dataTh.commence()
             self.__MCUInterface.beginEvents()
 
         # Updates LUT methods to reflect new waveform
@@ -401,13 +391,9 @@ class TestBench(QMainWindow):
     #
     def setSamplingFrequency(self): # TODO
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz, need to provide hz
-        self.__dataTh.setPollFrequency((newFrequency / self.__MCUInterface.getBufferSize()) * 5)
         self.__MCUInterface.setAdcFrequency(newFrequency)
         if(self.__MCUInterface.isScanning()):
             self.__MCUInterface.pauseEvents()
-            self.__dataTh.halt()
-            self.__dataTh.commence()
-            self.__DequeDataToRegister.clear()
             self.__MCUInterface.beginEvents()
 
 if __name__ == "__main__":

@@ -38,21 +38,50 @@ class Register(threading.Thread):
     __StandardCallback            = None
     __xOffset                     = 0.0
     __yOffset                     = 0.0
-
+    __MCUInterface                = None
+    __DoSample                    = False
+    
+    """
     def __init__(self, inputQueue, outputCallback):
         threading.Thread.__init__(self)
         self.__InputBuffer    = inputQueue
         self.__OutputCallback = outputCallback
+    """
+    def __init__(self, outputCallback, MCUInterface):
+        threading.Thread.__init__(self)
+        self.__OutputCallback = outputCallback
+        self.__MCUInterface   = MCUInterface
 
     #
     # Description:
     #   Translates points and evaluates callback.
     #
+    """
     def run(self):
         while True:
             if(len(self.__InputBuffer) > 0):
-                self.__OutputCallback(self.registerPoints(self.__InputBuffer.popleft()))
+                self.__OutputCallback(self.registerPoints(self.__InputBuffer.popleft()))         
+    """
+    
+    def run(self):
+        while True:
+            if self.__DoSample:
+                value = self.__MCUInterface.getDataBuffer()
+                if value is not None:
+                    self.__OutputCallback(self.registerPoints(value))
+    #
+    # Descriptition:
+    #   Stops acquiring sample blocks for continous streaming.
+    #
+    def halt(self):
+        self.__DoSample = False
 
+    #
+    # Description:
+    #   Starts acquiring sample blocks for continuous streaming.
+    #
+    def commence(self):
+        self.__DoSample = True
     #
     # Description:
     #   Assigns screen coordinate locations to the given sample data block.
