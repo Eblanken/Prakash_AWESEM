@@ -233,7 +233,8 @@ class TestBench(QMainWindow):
     #   Brings up dialog to save the image currently on the monitor to the disk.
     #
     def saveImage(self):
-        if not self.__ScanImage.save("Captures\Capture_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]")), format = "BMP"):
+        settingsString = "%s-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)-[%0.2f, %0.2f](2pi), " % (self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value(), self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value(), self.__UiElems.Sampling_Phase_Vertical_Spinbox.value())
+        if not self.__ScanImage.save("Captures\Capture_%s_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]"), settingsString), format = "BMP"):
             print("Failed to Save Image")
 
 
