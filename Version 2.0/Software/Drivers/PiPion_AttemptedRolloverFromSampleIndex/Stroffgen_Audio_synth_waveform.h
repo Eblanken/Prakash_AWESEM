@@ -31,6 +31,8 @@
 #include "Stroffgen_AudioStream.h"
 #include "arm_math.h"
 
+typedef void (*callback)(void);
+
 // waveforms.c
 extern "C" {
 extern const int16_t AudioWaveformSine[257];
@@ -47,6 +49,7 @@ extern const int16_t AudioWaveformSine[257];
 #define WAVEFORM_SAMPLE_HOLD       7
 #define WAVEFORM_TRIANGLE_VARIABLE 8
 
+// Modified to add callback on each period and exposed phase accumulator
 class AudioSynthWaveform : public AudioStream
 {
 public:
@@ -66,6 +69,7 @@ public:
 		phase_increment = freq * (4294967296.0 / AUDIO_SAMPLE_RATE_EXACT);
 		if (phase_increment > 0x7FFE0000u) phase_increment = 0x7FFE0000;
 	}
+
 	void phase(float angle) {
 		if (angle < 0.0) {
 			angle = 0.0;
@@ -75,6 +79,34 @@ public:
 		}
 		phase_offset = angle * (4294967296.0 / 360.0);
 	}
+
+	/*
+	 * Description:
+	 * 	MODDED: Erick Blankenberg, exposed phase accumulator so we actually reset.
+	 */
+	void restart() {
+		phase_accumulator = 0;
+	}
+
+	/*
+	 * Description:
+	 *  MODDED: Erick Blankenberg, trying to starve dac output by cutting off source
+	 * 	so that it reaches known initial ready state once it has exhausted all internal
+	 * 	resources. This function prevents the waveform from progresssing and stops output.
+	 */
+	void disableOutput() {
+		synthEnabled = false;
+	}
+
+	/*
+	 * Description:
+	 * 	MODDED: Erick Blankenberg, see above, this function enables progression of
+	 * 	the waveform .
+	 */
+	void enableOutput() {
+		synthEnabled = true;
+	}
+
 	void amplitude(float n) {	// 0 to 1.0
 		if (n < 0) {
 			n = 0;
@@ -84,10 +116,6 @@ public:
 		magnitude = n * 65536.0;
 	}
 
-	// MODIFIED: Erick Blankenberg, added ability to reset phase
-	void restart(void) {
-		phase_accumulator = 0;
-	}
 	void offset(float n) {
 		if (n < -1.0) {
 			n = -1.0;
@@ -96,6 +124,7 @@ public:
 		}
 		tone_offset = n * 32767.0;
 	}
+
 	void pulseWidth(float n) {	// 0.0 to 1.0
 		if (n < 0) {
 			n = 0;
@@ -104,10 +133,13 @@ public:
 		}
 		pulse_width = n * 4294967296.0;
 	}
+
 	void begin(short t_type) {
 		phase_offset = 0;
+		synthEnabled = true;
 		tone_type = t_type;
 	}
+
 	void begin(float t_amp, float t_freq, short t_type) {
 		amplitude(t_amp);
 		frequency(t_freq);
@@ -129,6 +161,7 @@ private:
 	int16_t  sample; // for WAVEFORM_SAMPLE_HOLD
 	short    tone_type;
 	int16_t  tone_offset;
+	bool     synthEnabled;
 };
 
 #endif

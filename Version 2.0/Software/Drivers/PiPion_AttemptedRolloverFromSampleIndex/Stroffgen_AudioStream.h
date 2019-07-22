@@ -72,6 +72,7 @@ class AudioStream;
 class AudioConnection;
 
 typedef struct audio_block_struct {
+	uint32_t resetIndex; // MODDED ERICK BLANKENBERG uses to allow for precise rollover time handling, set to UINT32_MAX if not used
 	uint8_t  ref_count;
 	uint8_t  reserved1;
 	uint16_t memory_pool_index;

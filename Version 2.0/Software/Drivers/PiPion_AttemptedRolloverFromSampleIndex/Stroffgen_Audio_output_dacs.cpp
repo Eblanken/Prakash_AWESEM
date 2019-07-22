@@ -36,9 +36,10 @@ audio_block_t * AudioOutputAnalogStereo::block_left_2nd = NULL;
 audio_block_t * AudioOutputAnalogStereo::block_right_1st = NULL;
 audio_block_t * AudioOutputAnalogStereo::block_right_2nd = NULL;
 audio_block_t AudioOutputAnalogStereo::block_silent;
+uint32_t AudioOutputAnalogStereo::rollOverTimeLeft = 0;
+uint32_t AudioOutputAnalogStereo::rollOverTimeRight = 0;
 bool AudioOutputAnalogStereo::update_responsibility = false;
 DMAChannel AudioOutputAnalogStereo::dma(false);
-
 void AudioOutputAnalogStereo::begin(void)
 {
 	dma.begin(true); // Allocate the DMA channel first
@@ -47,6 +48,7 @@ void AudioOutputAnalogStereo::begin(void)
 	DAC0_C0 = DAC_C0_DACEN;                   // 1.2V VDDA is DACREF_2
 	DAC1_C0 = DAC_C0_DACEN;
 	memset(&block_silent, 0, sizeof(block_silent));
+	block_silent.resetIndex = UINT32_MAX;
 
 	// slowly ramp up to DC voltage, approx 1/4 second
 	for (int16_t i=0; i<=2048; i+=8) {
@@ -107,8 +109,8 @@ void AudioOutputAnalogStereo::reset(void) {
   dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
   dma.triggerAtHardwareEvent(DMAMUX_SOURCE_PDB);
   update_responsibility = update_setup();
-  
-  
+
+
 	// Resets buffer
 	for(int index = 0; index < AUDIO_BLOCK_SAMPLES * 2; index++) {
 		dac_buffer[index] = 0; // TODO should redirect to block_silent (which is zero anyway but more readable)
@@ -120,6 +122,14 @@ void AudioOutputAnalogStereo::reset(void) {
   if (block_right_1st) { release(block_right_1st); block_right_1st = NULL; }
   if (block_right_2nd) { release(block_right_2nd); block_right_2nd = NULL; }
   dma.enable();
+}
+
+uint32_t AudioOutputAnalogStereo::getRolloverTimeLeft() {
+	return rollOverTimeLeft;
+}
+
+uint32_t AudioOutputAnalogStereo::getRolloverTimeRight() {
+	return rollOverTimeRight;
 }
 
 void AudioOutputAnalogStereo::analogReference(int ref)
@@ -185,6 +195,14 @@ void AudioOutputAnalogStereo::isr(void)
 	audio_block_t *block_left, *block_right;
 	uint32_t saddr;
 
+	// Determines what to write
+	block_left = block_left_1st;
+	if (!block_left) block_left = &block_silent;
+	block_right = block_right_1st;
+	if (!block_right) block_right = &block_silent;
+	src_left = (const uint32_t *)(block_left->data);
+	src_right = (const uint32_t *)(block_right->data);
+
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	if (saddr < (uint32_t)dac_buffer + sizeof(dac_buffer) / 2) {
@@ -192,19 +210,30 @@ void AudioOutputAnalogStereo::isr(void)
 		// so we must fill the second half
 		dest = dac_buffer + AUDIO_BLOCK_SAMPLES;
 		end = dac_buffer + AUDIO_BLOCK_SAMPLES*2;
+		// If we want to reset the time, the reset index will be after the current read address
+		if(block_left->resetIndex != UINT32_MAX) {
+					uint32_t samplesUntilReset = block_left->resetIndex - (saddr - (uint32_t)dac_buffer);
+					rollOverTimeLeft = micros() + (uint32_t) ((float) samplesUntilReset * (((float) 1E6) / ((float) AUDIO_SAMPLE_RATE_EXACT)));
+		}
+		if(block_right->resetIndex != UINT32_MAX) {
+					uint32_t samplesUntilReset = block_right->resetIndex - (saddr - (uint32_t)dac_buffer);
+					rollOverTimeRight = micros() + (uint32_t) (samplesUntilReset * (((double) 1E6) / ((double) AUDIO_SAMPLE_RATE_EXACT)));
+		}
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
 		dest = dac_buffer;
 		end = dac_buffer + AUDIO_BLOCK_SAMPLES;
+		// Number of samples until reset wraps around as we are writing behind the read position now
+		if(block_left->resetIndex != UINT32_MAX) {
+			uint32_t samplesUntilReset = (block_left->resetIndex + 2 * AUDIO_BLOCK_SAMPLES) - (saddr - (uint32_t)dac_buffer);;
+			rollOverTimeLeft = micros() + (uint32_t) (samplesUntilReset * (((double) 1E6) / ((double) AUDIO_SAMPLE_RATE_EXACT)));
+		}
+		if(block_right->resetIndex != UINT32_MAX) {
+			uint32_t samplesUntilReset = (block_right->resetIndex + 2 * AUDIO_BLOCK_SAMPLES) - (saddr - (uint32_t)dac_buffer);
+			rollOverTimeRight = micros() + (uint32_t) (samplesUntilReset * (((double) 1E6) / ((double) AUDIO_SAMPLE_RATE_EXACT)));
+		}
 	}
-	block_left = block_left_1st;
-	if (!block_left) block_left = &block_silent;
-	block_right = block_right_1st;
-	if (!block_right) block_right = &block_silent;
-
-	src_left = (const uint32_t *)(block_left->data);
-	src_right = (const uint32_t *)(block_right->data);
 	do {
 		// TODO: can this be optimized?
 		uint32_t left = *src_left++;

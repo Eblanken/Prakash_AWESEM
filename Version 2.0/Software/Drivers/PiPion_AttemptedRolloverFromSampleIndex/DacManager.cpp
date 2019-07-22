@@ -18,10 +18,6 @@
 
 //----------------------- Internal Variables ---------------------
 
-IntervalTimer            AUpdater;
-IntervalTimer            BUpdater;
-elapsedMicros            aDuration;
-elapsedMicros            bDuration;
 float                    channelAFrequency = DAC_DEFAULT_FREQUENCY_A; // > Frequency in hertz
 float                    channelBFrequency = DAC_DEFAULT_FREQUENCY_B; // > Frequency in hertz
 uint8_t                  channelAWaveform  = DAC_DEFAULT_WAVEFORM_A;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
@@ -53,8 +49,6 @@ void Dac_init() {
   pinMode(A22, OUTPUT);
   AudioMemory(10);
   Dacs.analogReference(DAC_REFERENCE);
-  AUpdater.priority(DAC_APRIORITY);
-  BUpdater.priority(DAC_BPRIORITY);
   #ifdef DAC_DEBUG
   pinMode(DAC_DEBUG_PIN_A, OUTPUT);
   pinMode(DAC_DEBUG_PIN_B, OUTPUT);
@@ -184,7 +178,7 @@ uint8_t Dac_getWaveform(uint8_t targetChannel) {
  *  The time offset in microseconds.
  */
 uint32_t Dac_getAOffsetMicros() {
-  return aDuration;
+  return micros() - Dacs.getRolloverTimeLeft();
 }
 
 /*
@@ -196,7 +190,7 @@ uint32_t Dac_getAOffsetMicros() {
  *  The time offset in microseconds.
  */
 uint32_t Dac_getBOffsetMicros() {
-  return bDuration;
+  return micros() - Dacs.getRolloverTimeRight();
 }
 
 /*
@@ -206,34 +200,6 @@ uint32_t Dac_getBOffsetMicros() {
 void Dac_pause() {
   ChannelA.amplitude(0);
   ChannelB.amplitude(0);
-}
-
-
-/*
- * Description:
- *  Resets the A timer at the end of the last A period.
- */
-void Dac_updateATimer() {
-  #ifdef DAC_DEBUG
-  digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
-  debugAToggleOnPeriod = !debugAToggleOnPeriod;
-  #endif
-  // > Tried to call restart() on the channel here earlier but calling continuously
-  //   causes issues, better to call once. No observed timing drift relative to waveform,
-  //   so just get initial offset to be correct.
-  aDuration = 0;
-}
-
-/*
- * Description:
- *  Resets the B timer at the end of the last B period.
- */
-void Dac_updateBTimer() {
-  #ifdef DAC_DEBUG
-  digitalWrite(DAC_DEBUG_PIN_B, debugBToggleOnPeriod);
-  debugBToggleOnPeriod = !debugBToggleOnPeriod;
-  #endif
-  bDuration = 0;
 }
 
 /*
@@ -276,11 +242,5 @@ void Dac_resume() { // TODO verify restart order
   ChannelA.restart();
   ChannelB.restart();
   AudioInterrupts();
-  delayMicroseconds(1275); // > TODO: Was found empirically, the whole audio chain needs to be revised for better synch (reset all elements), currently has different offsets for each channel
-  aDuration = 0;           //         and generally is terrible. Currently occasionally is off by one block.
-  //delayMicroseconds(800);
-  bDuration = 0;
-  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
-  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
   digitalWrite(DAC_DEBUG_PIN_R, LOW);
 }

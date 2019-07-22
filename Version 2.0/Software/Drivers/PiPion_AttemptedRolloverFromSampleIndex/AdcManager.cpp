@@ -148,7 +148,7 @@ void Adc_resume() {
  *  The actual interrupt called when conversion is complete.
  */
 void adc0_isr() {
-  static sampleBuffer *       currentSample = AdcBuffer_getHead(); // TODO first buffer does not have proper Aoffset and Boffset, maybe does not matter since both are 0?
+  static sampleBuffer * currentSample = AdcBuffer_getHead(); // TODO first buffer does not have proper Aoffset and Boffset, maybe does not matter since both are 0?
   currentSample->data[currentSampleCount++] = Adc.readSingle();
   #ifdef ADC_DEBUG // TODO lighting does not seem to alternate properly, on for too short a time.
   digitalWriteFast(ADC_DEBUG_PIN_SAMPLE, LOW);
