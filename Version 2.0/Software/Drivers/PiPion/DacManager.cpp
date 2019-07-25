@@ -1,5 +1,3 @@
-// TODO change to use singleton design pattern
-
 /*
  * File: DacManager.cpp
  * ------------------------------
@@ -8,6 +6,10 @@
  *
  * Description:
  *  This is the implementation of functions for the DAC.
+ *
+ * TODO
+ *  - Currently offset rolls over pre-maturely when slow axis is running too slow and overflows?
+ *    It seems that the intervaltimer has a limit of 71582788 microseconds depending on F_BUS but overflows at about 33 seconds.
  */
 
 #include "Constants.hpp"
@@ -20,8 +22,8 @@
 
 IntervalTimer            AUpdater;
 IntervalTimer            BUpdater;
-elapsedMicros            aDuration;
-elapsedMicros            bDuration;
+uint32_t                 lastACrossover;
+uint32_t                 lastBCrossover;
 float                    channelAFrequency = DAC_DEFAULT_FREQUENCY_A; // > Frequency in hertz
 float                    channelBFrequency = DAC_DEFAULT_FREQUENCY_B; // > Frequency in hertz
 uint8_t                  channelAWaveform  = DAC_DEFAULT_WAVEFORM_A;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
@@ -184,7 +186,7 @@ uint8_t Dac_getWaveform(uint8_t targetChannel) {
  *  The time offset in microseconds.
  */
 uint32_t Dac_getAOffsetMicros() {
-  return aDuration;
+  return micros() - lastACrossover;
 }
 
 /*
@@ -196,7 +198,7 @@ uint32_t Dac_getAOffsetMicros() {
  *  The time offset in microseconds.
  */
 uint32_t Dac_getBOffsetMicros() {
-  return bDuration;
+  return micros() - lastBCrossover;
 }
 
 /*
@@ -221,7 +223,7 @@ void Dac_updateATimer() {
   // > Tried to call restart() on the channel here earlier but calling continuously
   //   causes issues, better to call once. No observed timing drift relative to waveform,
   //   so just get initial offset to be correct.
-  aDuration = 0;
+  lastACrossover = micros();
 }
 
 /*
@@ -233,7 +235,7 @@ void Dac_updateBTimer() {
   digitalWrite(DAC_DEBUG_PIN_B, debugBToggleOnPeriod);
   debugBToggleOnPeriod = !debugBToggleOnPeriod;
   #endif
-  bDuration = 0;
+  lastBCrossover = micros();
 }
 
 /*
@@ -261,26 +263,45 @@ float Dac_getSamplePhase(uint8_t channelAWaveform) {
  *  Re-enables the DAC output but also implements any changes
  *  made since the last call.
  */
-void Dac_resume() { // TODO verify restart order
+void Dac_resume() {
+  pinMode(DAC_DEBUG_PIN_A, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_B, OUTPUT);
   AudioNoInterrupts();
-  digitalWrite(DAC_DEBUG_PIN_R, HIGH);
+  //digitalWrite(DAC_DEBUG_PIN_R, HIGH);
   ChannelA.begin(channelAWaveform);
   ChannelB.begin(channelBWaveform);
   ChannelA.frequency(channelAFrequency);
   ChannelB.frequency(channelBFrequency);
-  ChannelA.amplitude(channelAMagnitude);
-  ChannelB.amplitude(channelBMagnitude);
   ChannelA.phase(Dac_getSamplePhase(channelAWaveform));
   ChannelB.phase(Dac_getSamplePhase(channelBWaveform));
-  Dacs.reset();
-  ChannelA.restart();
-  ChannelB.restart();
   AudioInterrupts();
-  delayMicroseconds(1275); // > TODO: Was found empirically, the whole audio chain needs to be revised for better synch (reset all elements), currently has different offsets for each channel
-  aDuration = 0;           //         and generally is terrible. Currently occasionally is off by one block.
-  //delayMicroseconds(800);
-  bDuration = 0;
+
+  // Updates first channel
+  digitalWriteFast(DAC_DEBUG_PIN_A, HIGH);
+  // > Flushes old data
+  ChannelA.amplitude(0); // Clears pipeline
+  delay(10);
+  // > Restarts and catches first period start
+  ChannelA.amplitude(channelAMagnitude);
+  ChannelA.restart();    // Sets phase back so we can catch first crossover
+  Dacs.forceSync0();
+  digitalWriteFast(DAC_DEBUG_PIN_A, LOW);
+  // > Starts timer to track crossovers indirectly
+  lastACrossover = micros();
   AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
+
+  // Updates second channel
+  digitalWriteFast(DAC_DEBUG_PIN_B, HIGH);
+  // > Flushes old data
+  ChannelB.amplitude(0); // Clears pipeline
+  delay(10);
+  // > Restarts and catches first period start
+  ChannelB.amplitude(channelBMagnitude);
+  ChannelB.restart();    // Sets phase back so we can catch first crossover
+  Dacs.forceSync1();
+  digitalWriteFast(DAC_DEBUG_PIN_B, LOW);
+  // > Starts timer to track crossovers indirectly
+  lastBCrossover = micros();
   BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
-  digitalWrite(DAC_DEBUG_PIN_R, LOW);
+  //digitalWrite(DAC_DEBUG_PIN_R, LOW);
 }
