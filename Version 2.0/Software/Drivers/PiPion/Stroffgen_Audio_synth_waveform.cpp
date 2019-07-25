@@ -38,7 +38,6 @@ void AudioSynthWaveform::update(void) {
 		int16_t magnitude15;
 		uint32_t i, ph, index, index2, scale;
 		const uint32_t inc = phase_increment;
-    uint16_t IWASRECORD = 0;
 
 		ph = phase_accumulator + phase_offset;
     uint32_t originalPh = phase_accumulator; // Used to track overflow
