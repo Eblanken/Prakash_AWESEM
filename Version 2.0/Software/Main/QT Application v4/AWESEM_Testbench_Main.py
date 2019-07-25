@@ -47,6 +47,7 @@
 #       - Need to set phase offset on teensy side for triangle, sine, etc. to match definition
 #         client side which has falling for first half rising for second (not standard definition, makes filtering easier)
 
+import psutil
 from   time                          import perf_counter
 from   collections                   import deque
 import sys
@@ -397,6 +398,9 @@ class TestBench(QMainWindow):
             self.__MCUInterface.beginEvents()
 
 if __name__ == "__main__":
+    P = psutil.Process()
+    P.cpu_affinity([0])
+   # P.nice(psutil.HIGH_PRIORITY_CLASS)
     if not QApplication.instance():
         app = QApplication(sys.argv)
     else:
