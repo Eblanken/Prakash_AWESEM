@@ -29,7 +29,7 @@
 #include "arm_math.h"
 #include "Stroffgen_dspinst.h"
 
-// MODDED: Erick Blankenberg, added ability to freeze the output.
+// MODDED: Erick Blankenberg, added ability to freeze the output, added callback on phase rollover
 void AudioSynthWaveform::update(void) {
 	if(synthEnabled) {
 		audio_block_t *block;
@@ -38,8 +38,10 @@ void AudioSynthWaveform::update(void) {
 		int16_t magnitude15;
 		uint32_t i, ph, index, index2, scale;
 		const uint32_t inc = phase_increment;
+    uint16_t IWASRECORD = 0;
 
 		ph = phase_accumulator + phase_offset;
+    uint32_t originalPh = phase_accumulator; // Used to track overflow
 		if (magnitude == 0) {
 			phase_accumulator += inc * AUDIO_BLOCK_SAMPLES;
 			return;
@@ -50,7 +52,7 @@ void AudioSynthWaveform::update(void) {
 			return;
 		}
 		bp = block->data;
-
+    block->resetIndex = UINT32_MAX;
 		switch(tone_type) {
 		case WAVEFORM_SINE:
 			for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
@@ -62,6 +64,11 @@ void AudioSynthWaveform::update(void) {
 				val1 *= 0x10000 - scale;
 				*bp++ = multiply_32x32_rshift32(val1 + val2, magnitude);
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -83,6 +90,11 @@ void AudioSynthWaveform::update(void) {
 				val1 *= 0x10000 - scale;
 				*bp++ = multiply_32x32_rshift32(val1 + val2, magnitude);
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -95,6 +107,11 @@ void AudioSynthWaveform::update(void) {
 					*bp++ = magnitude15;
 				}
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -102,6 +119,11 @@ void AudioSynthWaveform::update(void) {
 			for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 				*bp++ = signed_multiply_32x16t(magnitude, ph);
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -109,6 +131,11 @@ void AudioSynthWaveform::update(void) {
 			for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 				*bp++ = signed_multiply_32x16t(0xFFFFFFFFu - magnitude, ph);
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -121,6 +148,11 @@ void AudioSynthWaveform::update(void) {
 					*bp++ = (((int32_t)ph >> 15) * magnitude) >> 16;
 				}
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -140,6 +172,11 @@ void AudioSynthWaveform::update(void) {
 					*bp++ = (((int32_t)n >> 16) * magnitude) >> 16;
 				}
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			} while (0);
 			break;
@@ -153,6 +190,11 @@ void AudioSynthWaveform::update(void) {
 					*bp++ = -magnitude15;
 				}
 				ph += inc;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 
@@ -164,6 +206,11 @@ void AudioSynthWaveform::update(void) {
 					sample = random(magnitude) - (magnitude >> 1);
 				}
 				ph = newph;
+        uint32_t currentAccumulator = ph - phase_offset;
+        if(currentAccumulator < originalPh) { // MODDED ERICK BLANKENBERG: Handles Overflow
+          block->resetIndex = i;
+          originalPh = currentAccumulator;
+        }
 			}
 			break;
 		}

@@ -54,8 +54,7 @@
 #define AUDIO_BLOCK_SAMPLES  64
 #endif
 #endif
-
-#define AUDIO_BLOCK_SAMPLES 32 // MODDED by Erick Blankenberg: Trying to lower latency
+#define AUDIO_BLOCK_SAMPLES 64 // MODDED by Erick Blankenberg: Trying to lower latency
 
 #ifndef AUDIO_SAMPLE_RATE_EXACT
 #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -72,6 +71,7 @@ class AudioStream;
 class AudioConnection;
 
 typedef struct audio_block_struct {
+	uint32_t resetIndex; // MODDED ERICK BLANKENBERG uses to allow for precise rollover time handling, set to UINT32_MAX if not used for the current block
 	uint8_t  ref_count;
 	uint8_t  reserved1;
 	uint16_t memory_pool_index;

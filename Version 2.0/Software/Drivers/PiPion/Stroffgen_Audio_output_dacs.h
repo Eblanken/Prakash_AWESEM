@@ -37,9 +37,15 @@ public:
 	AudioOutputAnalogStereo(void) : AudioStream(2, inputQueueArray) { begin(); }
 	virtual void update(void);
 	void begin(void);
-	void reset(void);
 	void analogReference(int ref);
+	// MODDDED Erick Blankenberg, blocking wait until the DMA channel is pointing
+	// at an index with a corresponding non-zero beginning of period flag issued
+	// by the synth waveform module through additional flag in the audio block.
+	void forceSync0();
+	void forceSync1();
 private:
+	static volatile int64_t       indexRollover0;
+	static volatile int64_t       indexRollover1;
 	static audio_block_t *block_left_1st;
 	static audio_block_t *block_left_2nd;
 	static audio_block_t *block_right_1st;

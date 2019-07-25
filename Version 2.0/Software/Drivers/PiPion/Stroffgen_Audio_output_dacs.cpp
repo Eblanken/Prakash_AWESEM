@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#include "Constants.hpp"
 #include <Arduino.h>
 #include "Stroffgen_Audio_output_dacs.h"
 #include "Stroffgen_pdb.h"
@@ -36,17 +37,19 @@ audio_block_t * AudioOutputAnalogStereo::block_left_2nd = NULL;
 audio_block_t * AudioOutputAnalogStereo::block_right_1st = NULL;
 audio_block_t * AudioOutputAnalogStereo::block_right_2nd = NULL;
 audio_block_t AudioOutputAnalogStereo::block_silent;
+volatile int64_t AudioOutputAnalogStereo::indexRollover0 = UINT32_MAX;
+volatile int64_t AudioOutputAnalogStereo::indexRollover1 = UINT32_MAX;
 bool AudioOutputAnalogStereo::update_responsibility = false;
 DMAChannel AudioOutputAnalogStereo::dma(false);
 
-void AudioOutputAnalogStereo::begin(void)
-{
+void AudioOutputAnalogStereo::begin(void) {
 	dma.begin(true); // Allocate the DMA channel first
 
 	SIM_SCGC2 |= SIM_SCGC2_DAC0 | SIM_SCGC2_DAC1;
 	DAC0_C0 = DAC_C0_DACEN;                   // 1.2V VDDA is DACREF_2
 	DAC1_C0 = DAC_C0_DACEN;
 	memset(&block_silent, 0, sizeof(block_silent));
+	block_silent.resetIndex = UINT32_MAX;
 
 	// slowly ramp up to DC voltage, approx 1/4 second
 	for (int16_t i=0; i<=2048; i+=8) {
@@ -88,38 +91,21 @@ void AudioOutputAnalogStereo::begin(void)
 	dma.attachInterrupt(isr);
 }
 
-// MODDED: Erick Blankenberg, added ability to set DMA to known state.
-void AudioOutputAnalogStereo::reset(void) {
-  while(dma.TCD->SADDR != dac_buffer); // TODO Synchronizing DMA position this way is truly horrific, need to find a better way
-  dma.disable();
-  /*
-  dma.TCD->SOFF = 4;
-  dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(DMA_TCD_ATTR_SIZE_32BIT) |
-    DMA_TCD_ATTR_DSIZE(DMA_TCD_ATTR_SIZE_16BIT);
-  dma.TCD->NBYTES_MLNO = DMA_TCD_NBYTES_MLOFFYES_NBYTES(4) | DMA_TCD_NBYTES_DMLOE |
-    DMA_TCD_NBYTES_MLOFFYES_MLOFF((&DAC0_DAT0L - &DAC1_DAT0L) * 2);
-  dma.TCD->SLAST = -sizeof(dac_buffer);
-  dma.TCD->DADDR = &DAC0_DAT0L;
-  dma.TCD->DOFF = &DAC1_DAT0L - &DAC0_DAT0L;
-  dma.TCD->CITER_ELINKNO = sizeof(dac_buffer) / 4;
-  dma.TCD->DLASTSGA = (&DAC0_DAT0L - &DAC1_DAT0L) * 2;
-  dma.TCD->BITER_ELINKNO = sizeof(dac_buffer) / 4;
-  dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-  dma.triggerAtHardwareEvent(DMAMUX_SOURCE_PDB);
-  update_responsibility = update_setup();
-  
-  
-	// Resets buffer
-	for(int index = 0; index < AUDIO_BLOCK_SAMPLES * 2; index++) {
-		dac_buffer[index] = 0; // TODO should redirect to block_silent (which is zero anyway but more readable)
+// MODIFIED Erick Blankenberg: Blocking wait until channel 0 reaches a flagged index
+void AudioOutputAnalogStereo::forceSync0() {
+	while(1) {
+		uint32_t currentAddressLoc = ((uint32_t) (dma.TCD->SADDR) - (uint32_t) (dac_buffer)) / 4; // Two 16 byte values per index and addresses are for bytes
+    // It seems like we occasionally jump by 2 and miss the value, I added a buffer.
+		if((currentAddressLoc > (indexRollover0 - DAC_SYNCRANGE)) && (currentAddressLoc < (indexRollover0 + DAC_SYNCRANGE))) break;
 	}
-  */
-	// Resets stored blocks
-  if (block_left_1st)  { release(block_left_1st);  block_left_1st  = NULL; }
-  if (block_left_2nd)  { release(block_left_2nd);  block_left_2nd  = NULL; }
-  if (block_right_1st) { release(block_right_1st); block_right_1st = NULL; }
-  if (block_right_2nd) { release(block_right_2nd); block_right_2nd = NULL; }
-  dma.enable();
+}
+
+// MODIFID Erick Blankenberg: Blocking wait until
+void AudioOutputAnalogStereo::forceSync1() {
+	while(1) {
+		uint32_t currentAddressLoc = ((uint32_t) (dma.TCD->SADDR) - (uint32_t) (dac_buffer)) / 4;
+		if((currentAddressLoc > (indexRollover1 - DAC_SYNCRANGE)) && (currentAddressLoc < (indexRollover1 + DAC_SYNCRANGE))) break;
+	}
 }
 
 void AudioOutputAnalogStereo::analogReference(int ref)
@@ -185,6 +171,14 @@ void AudioOutputAnalogStereo::isr(void)
 	audio_block_t *block_left, *block_right;
 	uint32_t saddr;
 
+	// Determines what to write
+	block_left = block_left_1st;
+	if (!block_left) block_left = &block_silent;
+	block_right = block_right_1st;
+	if (!block_right) block_right = &block_silent;
+	src_left = (const uint32_t *)(block_left->data);
+	src_right = (const uint32_t *)(block_right->data);
+
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	if (saddr < (uint32_t)dac_buffer + sizeof(dac_buffer) / 2) {
@@ -192,19 +186,32 @@ void AudioOutputAnalogStereo::isr(void)
 		// so we must fill the second half
 		dest = dac_buffer + AUDIO_BLOCK_SAMPLES;
 		end = dac_buffer + AUDIO_BLOCK_SAMPLES*2;
+    // Resets reset index if we are writing the block that used to contain it (DMA pointer has passed over it and rolled over)
+    if(indexRollover0 >= AUDIO_BLOCK_SAMPLES) indexRollover0 = UINT32_MAX;
+    if(indexRollover1 >= AUDIO_BLOCK_SAMPLES) indexRollover1 = UINT32_MAX;
+		// If we want to reset the time, the reset index will be after the current read address
+		if(block_left->resetIndex != UINT32_MAX) {
+					indexRollover0 = block_left->resetIndex + AUDIO_BLOCK_SAMPLES;
+		}
+		if(block_right->resetIndex != UINT32_MAX) {
+					indexRollover1 = block_right->resetIndex + AUDIO_BLOCK_SAMPLES;
+		}
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
 		dest = dac_buffer;
 		end = dac_buffer + AUDIO_BLOCK_SAMPLES;
+    // Resets reset index if we are writing the block that used to contain it (DMA pointer has passed over it and rolled over)
+    if(indexRollover0 < AUDIO_BLOCK_SAMPLES) indexRollover0 = UINT32_MAX;
+    if(indexRollover1 < AUDIO_BLOCK_SAMPLES) indexRollover1 = UINT32_MAX;
+		// Number of samples until reset wraps around as we are writing behind the read position now
+		if(block_left->resetIndex != UINT32_MAX) {
+				indexRollover0 = block_left->resetIndex;
+		}
+		if(block_right->resetIndex != UINT32_MAX) {
+				indexRollover1 = block_right->resetIndex;
+		}
 	}
-	block_left = block_left_1st;
-	if (!block_left) block_left = &block_silent;
-	block_right = block_right_1st;
-	if (!block_right) block_right = &block_silent;
-
-	src_left = (const uint32_t *)(block_left->data);
-	src_right = (const uint32_t *)(block_right->data);
 	do {
 		// TODO: can this be optimized?
 		uint32_t left = *src_left++;
