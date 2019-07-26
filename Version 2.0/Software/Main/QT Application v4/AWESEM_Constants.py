@@ -25,13 +25,13 @@ RES_W = 250
 RES_H = 250
 
 # Defaults
-DEFAULT_ADC_SAMPLEFREQUENCY = 20.0 # KHz, frequency of ADC sampling.
+DEFAULT_ADC_SAMPLEFREQUENCY = 15.0 # KHz, frequency of ADC sampling.
 # Default driving waveform
 DEFAULT_VERTWA = 1 # Combobox waveform index: 0 = Sine, 1 = Triangle, 2 = Sawtooth TODO no direct correspondance to combobox to waveform type on teensy
 DEFAULT_HORZWA = 1 
 # Default driving waveform frequency in hertz
 DEFAULT_VERTHZ = 50  # Hertz
-DEFAULT_HORZHZ = 0.05
+DEFAULT_HORZHZ = 0.03
 # Default driving waveform amplitude in volts (centered at 3.3/2)
 DEFAULT_VERTAM = 3.30 # Magnitude in volts
 DEFAULT_HORZAM = 3.30

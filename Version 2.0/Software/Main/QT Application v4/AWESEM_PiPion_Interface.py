@@ -450,8 +450,10 @@ class AWESEM_PiPion_Interface:
                     self._lastPacketID = currentNumber[0]
                     # Result consists of three 32 bit integers and then an
                     # array of bytes.
-                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In milliseconds
-                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In milliseconds
+                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
+                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
+                    print(aOffset)
+                    print(bOffset)
                     duration = (struct.unpack('<I', self._readBytes(4)))[0]
                     byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
                     byteArray = numpy.frombuffer(byteList, numpy.uint8)
@@ -521,6 +523,8 @@ class AWESEM_PiPion_Interface:
 
     # Sends a serial command to the PiPion in the form of a byte array
     def _sendBytes(self, command):
+
+
         self._serialPort.write(command)
 
     # Reads values from the PiPion
@@ -553,3 +557,4 @@ class AWESEM_PiPion_Interface:
         if self._verbose:
             print('McuInterface, No serial ports found for the PiPion.')
         return False
+    
