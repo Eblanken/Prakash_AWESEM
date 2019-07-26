@@ -278,30 +278,34 @@ void Dac_resume() {
 
   // Updates first channel
   digitalWriteFast(DAC_DEBUG_PIN_A, HIGH);
-  // > Flushes old data
-  ChannelA.amplitude(0); // Clears pipeline
-  delay(10);
-  // > Restarts and catches first period start
-  ChannelA.amplitude(channelAMagnitude);
-  ChannelA.restart();    // Sets phase back so we can catch first crossover
-  Dacs.forceSync0();
-  digitalWriteFast(DAC_DEBUG_PIN_A, LOW);
+  ChannelA.amplitude(0);
+  if(channelAMagnitude != 0) {
+    // > Flushes old data
+    delay(10);
+    // > Restarts and catches first period start
+    ChannelA.amplitude(channelAMagnitude);
+    ChannelA.restart();    // Sets phase back so we can catch first crossover
+    Dacs.forceSync0();
+  }
   // > Starts timer to track crossovers indirectly
   lastACrossover = micros();
   AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
+  digitalWriteFast(DAC_DEBUG_PIN_A, LOW);
 
-  // Updates second channel
+  // Updates second channel if necessary
   digitalWriteFast(DAC_DEBUG_PIN_B, HIGH);
-  // > Flushes old data
-  ChannelB.amplitude(0); // Clears pipeline
-  delay(10);
-  // > Restarts and catches first period start
-  ChannelB.amplitude(channelBMagnitude);
-  ChannelB.restart();    // Sets phase back so we can catch first crossover
-  Dacs.forceSync1();
-  digitalWriteFast(DAC_DEBUG_PIN_B, LOW);
+  ChannelB.amplitude(0);
+  if(channelBMagnitude != 0) {
+    // > Flushes old data
+    delay(10);
+    // > Restarts and catches first period start
+    ChannelB.amplitude(channelBMagnitude);
+    ChannelB.restart();    // Sets phase back so we can catch first crossover
+    Dacs.forceSync1();
+  }
   // > Starts timer to track crossovers indirectly
   lastBCrossover = micros();
   BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
+  digitalWriteFast(DAC_DEBUG_PIN_B, LOW);
   //digitalWrite(DAC_DEBUG_PIN_R, LOW);
 }
