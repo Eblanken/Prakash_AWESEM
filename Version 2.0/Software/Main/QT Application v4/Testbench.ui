@@ -185,6 +185,11 @@
       <string>Sawtooth</string>
      </property>
     </item>
+    <item>
+     <property name="text">
+      <string>Load Custom</string>
+     </property>
+    </item>
    </widget>
    <widget class="QComboBox" name="Horizontal_Waveform_Combobox">
     <property name="geometry">
@@ -208,6 +213,11 @@
     <item>
      <property name="text">
       <string>Sawtooth</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Load Custom</string>
      </property>
     </item>
    </widget>
@@ -335,6 +345,11 @@
       <height>21</height>
      </rect>
     </property>
+    <item>
+     <property name="text">
+      <string>LTI Reconstruction</string>
+     </property>
+    </item>
     <item>
      <property name="text">
       <string>Axis Waveform</string>
@@ -618,39 +633,84 @@
     </property>
    </widget>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>System</string>
     </property>
-    <addaction name="actionSave"/>
-    <addaction name="actionLoad_Calibration"/>
-    <addaction name="actionStart_Calibration"/>
+   </widget>
+   <widget class="QMenu" name="menuSystem_Model">
+    <property name="title">
+     <string>System Model</string>
+    </property>
+    <addaction name="actionLoad_System_Model"/>
+    <addaction name="actionChoose_Model"/>
+   </widget>
+   <widget class="QMenu" name="menuCalibration">
+    <property name="title">
+     <string>Calibration</string>
+    </property>
+    <addaction name="actionRun_Frequency_Sweep"/>
+    <addaction name="actionBuild_Distortion_Correction"/>
+    <addaction name="actionLoad_Profile"/>
+    <addaction name="actionCurrent_Correction_Profile"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSystem_Model"/>
+   <addaction name="menuCalibration"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSave">
    <property name="text">
-    <string>Save Calibration</string>
+    <string>Load System Model</string>
    </property>
   </action>
   <action name="actionLoad_Calibration">
    <property name="text">
-    <string>Load Calibration</string>
+    <string>Load Waveform</string>
    </property>
   </action>
   <action name="actionStart_Calibration">
    <property name="text">
-    <string>Start Calibration</string>
+    <string>Load Profile</string>
+   </property>
+  </action>
+  <action name="actionLoad_System_Model">
+   <property name="text">
+    <string>Load System Model</string>
+   </property>
+  </action>
+  <action name="actionChoose_Model">
+   <property name="text">
+    <string>Current Model</string>
+   </property>
+  </action>
+  <action name="actionRun_Frequency_Sweep">
+   <property name="text">
+    <string>Run Frequency Sweep</string>
+   </property>
+  </action>
+  <action name="actionBuild_Distortion_Correction">
+   <property name="text">
+    <string>Build Correction Profile</string>
+   </property>
+  </action>
+  <action name="actionLoad_Profile">
+   <property name="text">
+    <string>Load Correction Profile</string>
+   </property>
+  </action>
+  <action name="actionCurrent_Correction_Profile">
+   <property name="text">
+    <string>Current Correction Profile</string>
    </property>
   </action>
  </widget>

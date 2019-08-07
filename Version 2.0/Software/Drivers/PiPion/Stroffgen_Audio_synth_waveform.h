@@ -55,8 +55,7 @@ class AudioSynthWaveform : public AudioStream
 public:
 	AudioSynthWaveform(void) : AudioStream(0,NULL),
 		phase_accumulator(0), phase_increment(0), phase_offset(0),
-		magnitude(0), pulse_width(0x40000000),
-		arbdata(NULL), sample(0), tone_type(WAVEFORM_SINE),
+		magnitude(0), pulse_width(0x40000000), sample(0), tone_type(WAVEFORM_SINE),
 		tone_offset(0) {
 	}
 
@@ -147,8 +146,10 @@ public:
 		phase_offset = 0;
 		tone_type = t_type;
 	}
-	void arbitraryWaveform(const int16_t *data, float maxFreq) {
-		arbdata = data;
+	void arbitraryWaveform(const int16_t * data, float maxFreq) {
+		for(int currentDataIndex = 0; currentDataIndex < 256; currentDataIndex++) {
+      arbdata[currentDataIndex] = data[currentDataIndex];
+		}
 	}
 	virtual void update(void);
 
@@ -158,7 +159,7 @@ private:
 	uint32_t phase_offset;
 	int32_t  magnitude;
 	uint32_t pulse_width;
-	const int16_t *arbdata;
+	int16_t  arbdata[256] = {0};
 	int16_t  sample; // for WAVEFORM_SAMPLE_HOLD
 	short    tone_type;
 	int16_t  tone_offset;

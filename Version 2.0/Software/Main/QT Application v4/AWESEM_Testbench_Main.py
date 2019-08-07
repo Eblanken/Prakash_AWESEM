@@ -1,4 +1,4 @@
-N#
+#
 # File: AWESEM_Testbench_Main.py
 # ------------------------------
 # Authors: Brion Ye, Erick Blankenberg
@@ -42,13 +42,12 @@ N#
 #         for non-developer users.
 #       - Serial is bad on mac (may not be fixable / may be just my mac),
 #         Stroffgen has had simililar problems and has not been able to solve)
-#       - Random offset in sample timing upon initialization in MCU due to architecture of audio library, may require heavy modifications
-#           - Was able to get to partially work by changing phase_accumulator in waveform object, sill jumpy though. Also had to introduce manual delay
 #       - Need to set phase offset on teensy side for triangle, sine, etc. to match definition
 #         client side which has falling for first half rising for second (not standard definition, makes filtering easier)
 
+doChangeCPU = False # Set to true to set CPU affinity manually
+
 import psutil
-from   time                          import perf_counter
 from   collections                   import deque
 import sys
 import numpy
@@ -57,7 +56,8 @@ from   matplotlib                    import cm
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
 from   PyQt5.QtWidgets               import *
-from   AWESEM_Testbench_Autocode     import Ui_MainWindow
+from   PyQt5                         import uic
+# from   AWESEM_Testbench_Autocode     import Ui_MainWindow
 from   AWESEM_PiPion_Interface       import AWESEM_PiPion_Interface
 import AWESEM_Constants              as Const
 import AWESEM_Register               as Register
@@ -67,6 +67,8 @@ if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+Ui_MainWindow, QtBaseClass = uic.loadUiType("TestBench.ui")
 
 # Used for redirecting console output
 class Stream(QObject):
@@ -399,8 +401,9 @@ class TestBench(QMainWindow):
             self.__MCUInterface.beginEvents()
 
 if __name__ == "__main__":
-    P = psutil.Process()
-    P.cpu_affinity([0])
+    if doChangeCPU:
+        P = psutil.Process()
+        P.cpu_affinity([0])
    # P.nice(psutil.HIGH_PRIORITY_CLASS)
     if not QApplication.instance():
         app = QApplication(sys.argv)

@@ -45,7 +45,7 @@ class AWESEM_PiPion_Interface:
     _guardLock    = Lock() # Had crashes when attempting to set parameters during reads
 
     # Current values
-    
+
     _dacFrequencies = None
     _dacWaveforms   = None
     _dacMagnitudes  = None
@@ -277,7 +277,7 @@ class AWESEM_PiPion_Interface:
                         print("Error: McuInterface_getDacWaveform, unit disconnected")
                     return None
         return self._dacWaveforms[dacChannel]
-    
+
     #
     # Description:
     #   Sets the waveform associated with the given dac channel.
@@ -285,7 +285,7 @@ class AWESEM_PiPion_Interface:
     # Parameters:
     #   'dacChannel'  The target channel, either 1 or 0.
     #   'dacWaveform' The waveform associated with the channel,
-    #                 0 = Sine, 1 = Sawtooth, 3 = Triangle.
+    #                 0 = Sine, 1 = Sawtooth, 3 = Triangle, 4 = Custom
     #
     # Note:
     #   Updated DAC waveform settings will not take effect until
@@ -314,10 +314,47 @@ class AWESEM_PiPion_Interface:
 
     #
     # Description:
+    #   Sets custom waveform information for the given channel
+    #
+    # Parameters:
+    #   'dacChannel'    The target channel, either 1 or 0.
+    #   'waveformArray' The 256 value 16 bit integer LUT that the MCU should use (is linearily interpolated)
+    #
+    # Note:
+    #   Updated DAC waveform settings will not take effect until
+    #   the beginEvents() and pauseEvents() commands are called.
+    #
+    def setCustomWaveformData(self, dacChannel, waveformArray):
+        if(waveformArray.shape[0] != 256):
+            print("Error: MCUInterface_setCustomWaveformData, waveform wrong shape")
+            return False
+        if(numpy.sum(numpy.logical_or(waveformArray > 32767, waveformArray < -32767))):
+            print("Error: MCUInterface_setCustomWaveformData, waveform values out of range")
+            return False
+        waveformArray = waveformArray.astype(np.int16)
+        # Loads values into MCU
+        with self._guardLock:
+            if self._currentlyConnected:
+                self._sendBytes(struct.pack('<c256h', b'D', adcAverages, *array(waveformArray)))
+                response = self._readBytes(1)
+                if response == b'A':
+                    return True
+                else:
+                    if self._verbose:
+                        print("Error: MCUInterface_setCustomWaveformData, acknowledgement failure '%s'" % response.hex())
+                    return None
+            else:
+                if self._verbose:
+                    print("Error: MCUInterface_setCustomWaveformData, unit disconnected")
+                return None
+
+
+    #
+    # Description:
     #   Returns the frequency in hertz that the ADC samples at.
     #
     # Parameters:
-    #   'forceDirect' If true, reloads record from MCU rather than use client-side history   
+    #   'forceDirect' If true, reloads record from MCU rather than use client-side history
     #
     # Returns:
     #   Returns the ADC frequency in hertz as a float.
@@ -376,7 +413,7 @@ class AWESEM_PiPion_Interface:
     #   if the device is disconnected.
     #
     # Parameters:
-    #   'forceDirect' If true, reloads record from MCU rather than use client-side history  
+    #   'forceDirect' If true, reloads record from MCU rather than use client-side history
     #
     # Returns:
     #   None if disconnected, integer number of averages per ADC result
@@ -397,7 +434,7 @@ class AWESEM_PiPion_Interface:
                     if self._verbose:
                         print("Error: McuInterface_getAdcAverages, unit disconnected")
         return self._adcAverages
-    
+
     #
     # Description:
     #   Sets the number of averaged samples per ADC result.
@@ -557,4 +594,3 @@ class AWESEM_PiPion_Interface:
         if self._verbose:
             print('McuInterface, No serial ports found for the PiPion.')
         return False
-    

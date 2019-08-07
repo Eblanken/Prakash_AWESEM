@@ -70,7 +70,9 @@
  *
  *  {'w', [axis (uint8_t)]}                                               - Reads the current waveform, return format is Format {['A' if valid request, 'F' if invalid (only byte) (char)][0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8_t)]}
  *
- *  {'W', [axis (uint8_t)], [waveform (0 sine, 1 saw, 3 tria) (uint8_t)]} - Sets the waveform used in scanning, responds with 'A' if succesful
+ *  {'W', [axis (uint8_t)], [waveform (0 sine, 1 saw, 3 tria, 4 arbitrary) (uint8_t)]} - Sets the waveform used in scanning, responds with 'A' if succesful
+ *  
+ *  {'D', [axis (uint8_t)], [samples x 256 (int16_t)}                     - Sets the arbitrary waveform data for the given channel (note will restart both channels if one is using the arbitrary waveform)
  *
  *  {'A'}                                                                 - Requests a buffer, prints in order: {['A' if valid request, 'F' if invalid (only byte) (char)], [scan number (uint8_t)],
  *                                                                          [duration of scan in microseconds (uint16_t)],
@@ -272,6 +274,17 @@ void parseSetDacMagnitude() {
 
 /*
  * Description:
+ *  Reads a command string to set the arbitrary waveform data for the given channel.
+ */
+parseSetArbWavedata() {
+  uint16_t dataBuf[256] = {0};
+  for(int readIndex = 0; readIndex < 256; readIndex++) {
+    dataBuf[readIndex] = 
+  }
+}
+
+/*
+ * Description:
  *  Prints out the waveforms associated with the two axis.
  */
 void parseGetDacWaveform() {
@@ -454,6 +467,9 @@ void loop() {
         break;
       case 'W': // Sets waveform
         parseSetDacWaveform();
+        break;
+      case 'D':
+        parseSetArbWavedata();
         break;
       case 's': // Reads sampling frequency in hertz
         parseGetSFrequency();

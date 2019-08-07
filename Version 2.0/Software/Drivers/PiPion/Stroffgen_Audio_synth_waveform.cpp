@@ -72,18 +72,13 @@ void AudioSynthWaveform::update(void) {
 			break;
 
 		case WAVEFORM_ARBITRARY:
-			if (!arbdata) {
-				release(block);
-				phase_accumulator += inc * AUDIO_BLOCK_SAMPLES;
-				return;
-			}
 			// len = 256
 			for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 				index = ph >> 24;
 				index2 = index + 1;
 				if (index2 >= 256) index2 = 0;
-				val1 = *(arbdata + index);
-				val2 = *(arbdata + index2);
+				val1 = arbdata[index];
+				val2 = arbdata[index2];
 				scale = (ph >> 8) & 0xFFFF;
 				val2 *= scale;
 				val1 *= 0x10000 - scale;

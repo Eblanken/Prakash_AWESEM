@@ -143,6 +143,32 @@ float Dac_getMagnitude(uint8_t targetChannel) {
   return 0;
 }
 
+
+/*
+ * Description:
+ *  Sets the internal arbitrary waveform data that the system will use if the waveform is switched to arbitrary.
+ *
+ * Parameters:
+ *  'dataPointer' Pointer to first element of arbitrary waveform array, array size needs to be 256.
+ * 
+ * Note:
+ *  Will pause and resume while setting waveform if the current waveform is the arbitrary waveform.
+ */
+Dac_setArbWData(uint8_t targetChannel, uint16_t * dataPointer) {
+  bool success = false;
+  bool isUsingArb = ((channelAWaveform == 4) || (channelBWaveform == 4)); // At least one is using arbitrary waveform
+  if(isUsingArb) Dac_pause();
+  if(targetChannel == 0) {
+    ChannelB.arbitraryWaveform(dataPointer, 100.0)
+    success = true;
+  } else if(targetChannel == 1) {
+    ChannelA.arbitraryWaveform(dataPointer, 100.0)
+    success = true;
+  }
+  if(isUsingArb) Dac_resume();
+  return success;
+}
+
 /*
  * Description:
  *  Sets the waveform of the target channel.
