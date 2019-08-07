@@ -22,7 +22,7 @@ bool     Dac_setFrequency(uint8_t targetChannel, float newFrequency);
 float    Dac_getFrequency(uint8_t targetChannel);
 bool     Dac_setMagnitude(uint8_t targetChannel, float magnitude);
 float    Dac_getMagnitude(uint8_t targetChannel);
-bool     Dac_setArbWData(uint16_t * dataPointer); // Note that 
+bool     Dac_setArbWData(uint8_t channel, int16_t * dataPointer); // Note that 
 bool     Dac_setWaveform(uint8_t targetChannel, uint8_t desiredWaveform);
 uint8_t  Dac_getWaveform(uint8_t targetChannel);
 uint32_t Dac_getAOffsetMicros();

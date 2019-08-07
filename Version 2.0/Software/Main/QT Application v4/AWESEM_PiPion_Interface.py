@@ -331,11 +331,11 @@ class AWESEM_PiPion_Interface:
         if(numpy.sum(numpy.logical_or(waveformArray > 32767, waveformArray < -32767))):
             print("Error: MCUInterface_setCustomWaveformData, waveform values out of range")
             return False
-        waveformArray = waveformArray.astype(np.int16)
+        waveformArray = waveformArray.astype(numpy.int16)
         # Loads values into MCU
         with self._guardLock:
             if self._currentlyConnected:
-                self._sendBytes(struct.pack('<c256h', b'D', adcAverages, *array(waveformArray)))
+                self._sendBytes(struct.pack('<cb256h', b'D', dacChannel, *list(waveformArray)))
                 response = self._readBytes(1)
                 if response == b'A':
                     return True

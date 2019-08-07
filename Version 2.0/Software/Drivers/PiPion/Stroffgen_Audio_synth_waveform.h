@@ -146,7 +146,7 @@ public:
 		phase_offset = 0;
 		tone_type = t_type;
 	}
-	void arbitraryWaveform(const int16_t * data, float maxFreq) {
+	void arbitraryWaveform(const int16_t data[256], float maxFreq) {
 		for(int currentDataIndex = 0; currentDataIndex < 256; currentDataIndex++) {
       arbdata[currentDataIndex] = data[currentDataIndex];
 		}

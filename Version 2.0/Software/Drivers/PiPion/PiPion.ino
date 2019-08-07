@@ -102,6 +102,11 @@ typedef union { // Makes printing and recieving uint32's easy
  uint8_t bytes[4];
 } UINT32UNION_t;
 
+typedef union {
+  int16_t number;
+  uint8_t bytes[2];
+} INT16UNION_t;
+
 #ifdef SERIAL_DEBUG
 volatile bool lastSentOn = false;
 #endif
@@ -154,6 +159,20 @@ uint8_t getSerialUInt8() {
     }
   }
   return (uint8_t) Serial.read();
+}
+
+int16_t getSerialInt16() {
+  elapsedMillis timeOut = 0;
+  while(Serial.available() < 2) {
+    if(timeOut > SERIAL_TIMEOUT) {
+      String error = "Int16 Acquisition Error";
+      debugLEDError(error);
+    }
+  }
+  INT16UNION_t newValue;
+  newValue.bytes[0] = Serial.read();
+  newValue.bytes[1] = Serial.read();
+  return newValue.number;
 }
 
 /*
@@ -276,11 +295,19 @@ void parseSetDacMagnitude() {
  * Description:
  *  Reads a command string to set the arbitrary waveform data for the given channel.
  */
-parseSetArbWavedata() {
-  uint16_t dataBuf[256] = {0};
-  for(int readIndex = 0; readIndex < 256; readIndex++) {
-    dataBuf[readIndex] = 
+void parseSetArbWavedata() {
+  uint8_t currentChannel = getSerialUInt8();
+  if(currentChannel == 1 || currentChannel == 0) {
+    int16_t dataBuf[256] = {0};
+    for(int readIndex = 0; readIndex < 256; readIndex++) {
+      dataBuf[readIndex] = getSerialInt16();
+    }
+    Dac_setArbWData(currentChannel, dataBuf);
+    Serial.write('A');
+  } else {
+    Serial.write('F');
   }
+  Serial.send_now();
 }
 
 /*
