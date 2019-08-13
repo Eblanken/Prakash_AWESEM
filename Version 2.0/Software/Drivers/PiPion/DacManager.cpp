@@ -154,15 +154,15 @@ float Dac_getMagnitude(uint8_t targetChannel) {
  * Note:
  *  Will pause and resume while setting waveform if the current waveform is the arbitrary waveform.
  */
-bool Dac_setArbWData(uint8_t targetChannel, int16_t dataPointer[256]) {
+bool Dac_setArbWData(uint8_t targetChannel, int16_t dataVals[256]) {
   bool success = false;
   bool isUsingArb = ((channelAWaveform == 4) || (channelBWaveform == 4)); // At least one is using arbitrary waveform
   if(isUsingArb) Dac_pause();
   if(targetChannel == 0) {
-    ChannelB.arbitraryWaveform(dataPointer, 100.0);
+    ChannelA.arbitraryWaveform(dataVals, 100.0);
     success = true;
   } else if(targetChannel == 1) {
-    ChannelA.arbitraryWaveform(dataPointer, 100.0);
+    ChannelB.arbitraryWaveform(dataVals, 100.0);
     success = true;
   }
   if(isUsingArb) Dac_resume();

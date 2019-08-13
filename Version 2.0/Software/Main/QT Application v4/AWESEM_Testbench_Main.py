@@ -19,7 +19,7 @@
 #      Simple elastix:      https://simpleelastix.github.io
 #
 #   To successfully run this application
-#   download the following (make sure to run as admin, see script): 
+#   download the following (make sure to run as admin, see script):
 #       - Anaconda (takes care of most stuff)
 #       - numpy-indexed (go to conda prompt and type "conda install numpy-indexed -c conda-forge")
 #       - pyserial (go to conda prompt and type "conda install pyserial")
@@ -153,7 +153,7 @@ class TestBench(QMainWindow):
         self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
         self.__UiElems.Sampling_Collection_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
 
-        # Window 
+        # Window
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
         # Console output
@@ -326,7 +326,7 @@ class TestBench(QMainWindow):
         if(currentLUTMode == "Linear"):
             xFunction = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, 0.0)
             yFunction = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, 0.0)
-            
+
         elif currentLUTMode == "Axis Waveform":
             waveformFunctions = { # Values correspond to those on Teensy
                     "Sine"     : Analysis.cos,
@@ -338,7 +338,7 @@ class TestBench(QMainWindow):
             yWaveText = self.__UiElems.Vertical_Waveform_Combobox.currentText()
             xFunction = lambda inputTime : waveformFunctions.get(xWaveText)(inputTime, xAmplitude, xFrequency, 0.0)
             yFunction = lambda inputTime : waveformFunctions.get(yWaveText)(inputTime, yAmplitude, yFrequency, 0.0)
-            
+
             # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
             filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
             # Finds fastest axis
@@ -363,24 +363,24 @@ class TestBench(QMainWindow):
                 else:
                     print("Error: Main_setSamplingReconstruction, bad sample filtering '%s'" % (filteringText))
                     return
-            
+
             # Assigns filter function
             if xFrequency > yFrequency:
                 xFilterFunction = filterFunction
             else:
                 yFilterFunction = filterFunction
-                
+
             # Assigns time offset
-            self.__registerTh.setDataOffsetX(xPhase * (1.0 / xFrequency))        
-            self.__registerTh.setDataOffsetY(yPhase * (1.0 / yFrequency)) 
+            self.__registerTh.setDataOffsetX(xPhase * (1.0 / xFrequency))
+            self.__registerTh.setDataOffsetY(yPhase * (1.0 / yFrequency))
         else:
             print("Error: Main_setSamplingReconstruction, bad mode '%s'" % (currentLUTMode))
             return
-        
+
         # Sets filtering function
-        self.__registerTh.setDataFilterX(xFilterFunction)        
-        self.__registerTh.setDataFilterY(yFilterFunction) 
-            
+        self.__registerTh.setDataFilterX(xFilterFunction)
+        self.__registerTh.setDataFilterY(yFilterFunction)
+
         # Sets reconstruction functions
         if(xFunction is not None and yFunction is not None):
             self.__registerTh.setDataTranslateX(xFunction)
@@ -408,7 +408,7 @@ if __name__ == "__main__":
     if not QApplication.instance():
         app = QApplication(sys.argv)
     else:
-        app = QApplication.instance() 
+        app = QApplication.instance()
     window = TestBench()
     window.show()
     sys.exit(app.exec_())
