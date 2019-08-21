@@ -95,7 +95,7 @@ def normalizeDisplacement(stableLUT, imageDimension):
     min = np.min(stableLUT)
     max = np.max(stableLUT)
     totalDisp = max - min
-    screenLUT = np.round(((stableLUT - min) / totalDisp) * imageDimension).astype(np.uint16)
+    screenLUT = np.round(((stableLUT - min) / totalDisp) * (imageDimension - 1)).astype(np.uint16) # Note that this is zero indexed
     scaleFactor = float(totalDisp) / float(imageDimension) # Microns per pixel
     return screenLUT, scaleFactor
 

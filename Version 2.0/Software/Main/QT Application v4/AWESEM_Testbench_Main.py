@@ -295,10 +295,13 @@ class TestBench(QMainWindow):
     #
     def updateQTImage(self, valueVectors):
         if valueVectors is not None:
-            valueVectorColors = (self.__ColorMap(float(valueVectors[:, 2]) / 255.0) * 255.0).astype(numpy.uint8) # Format is RGBA
+            valueVectorColors = (self.__ColorMap(valueVectors[:, 2] / 255.0) * 255.0).astype(numpy.uint8) # Format is RGBA
             interiorView = byte_view(self.__ScanImage)
-            valueVectors[:, 1] = -1 * (valueVectors[:, 1] - Const.RES_H)
-            interiorView[valueVectors[:, 1], valueVectors[:, 0]] = valueVectorColors
+            valueVectors[:, 1] = -1 * (valueVectors[:, 1] - (Const.RES_H - 1)) # Flips coordinates so increasing goes from bottom up
+            interiorView[valueVectors[:, 1], valueVectors[:, 0], 0] = valueVectorColors[:, 2] # Converts rgba to bgra
+            interiorView[valueVectors[:, 1], valueVectors[:, 0], 1] = valueVectorColors[:, 1]
+            interiorView[valueVectors[:, 1], valueVectors[:, 0], 2] = valueVectorColors[:, 0]
+            interiorView[valueVectors[:, 1], valueVectors[:, 0], 3] = valueVectorColors[:, 3]
             self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     def toggleScanning(self):
