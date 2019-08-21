@@ -489,12 +489,10 @@ class AWESEM_PiPion_Interface:
                     # array of bytes.
                     aOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
                     bOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
-                    print(aOffset)
-                    print(bOffset)
                     duration = (struct.unpack('<I', self._readBytes(4)))[0]
                     byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
                     byteArray = numpy.frombuffer(byteList, numpy.uint8)
-                    value = numpy.stack((numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, byteArray), 1) # format is [data, aTimes, bTimes] as column vectors
+                    value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, byteArray), 1) # format is [data, aTimes, bTimes] as column vectors, times in seconds
                     return value
                 #elif response == b'F':
                     #if self._verbose:

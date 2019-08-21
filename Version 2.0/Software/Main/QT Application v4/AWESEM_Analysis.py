@@ -85,8 +85,8 @@ def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency):
     newTimesLUT, newValsLUT, _ = signal.lsim(systemModel, extendedOneShotValsLUT, extendedOneShotTimesLUT, interp = "True")
     newValsLUTLastPeriod  = newValsLUT[-systemLUTLen:]
     newTimesLUTLastPeriod = newTimesLUT[-systemLUTLen:]
-    stableLUT               = newValsLUT
-    stableTimes             = newTimesLUT % waveformPeriodLength
+    stableLUT               = newValsLUTLastPeriod
+    stableTimes             = newTimesLUTLastPeriod % waveformPeriodLength
     return stableTimes, stableLUT
 
 # Normalizes the given lookup tabke to monitor dimensions and returns a scale

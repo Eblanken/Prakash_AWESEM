@@ -294,11 +294,8 @@ class TestBench(QMainWindow):
     #
     def updateQTImage(self, valueVectors):
         if valueVectors is not None:
-            # Updates QT image
             colorTool = QColor()
-            number = 0
             for value in valueVectors: # TODO this complicated color conversion makes me sad
-                number = number + 1
                 colorVector = self.__ColorMap(float(value[2]) / 255.0)
                 colorTool.setRgb(colorVector[0] * 255, colorVector[1] * 255, colorVector[2] * 255)
                 self.__ScanImage.setPixel(int(value[0]), self.__ScanImage.height() - int(value[1]), colorTool.rgb())
@@ -358,10 +355,10 @@ class TestBench(QMainWindow):
         # Handles vertical
         verticalLabel = self.__UiElems.Vertical_Waveform_Combobox.currentText()
         if verticalLabel in self.__WaveTables: # Is an existing waveform
-            self.__MCUInterface.setDacMagnitude(0, self.__UiElems.Vertical_Amplitude_Spinbox.value())
-            self.__MCUInterface.setDacFrequency(0, self.__UiElems.Vertical_Frequency_Spinbox.value())
-            self.__MCUInterface.setCustomWaveformData(0, self.__WaveTables[verticalLabel])
-            self.__MCUInterface.setDacWaveform(0, 4)
+            self.__MCUInterface.setDacMagnitude(1, self.__UiElems.Vertical_Amplitude_Spinbox.value())
+            self.__MCUInterface.setDacFrequency(1, self.__UiElems.Vertical_Frequency_Spinbox.value())
+            self.__MCUInterface.setCustomWaveformData(1, self.__WaveTables[verticalLabel])
+            self.__MCUInterface.setDacWaveform(1, 4)
             self.__currentYWaveformOpt = self.__UiElems.Vertical_Waveform_Combobox.currentIndex()
         elif verticalLabel == "Load Custom": # Loads new waveform
             directories =  QFileDialog.getOpenFileNames(caption = "Select one or more waveform files.", directory = os.path.join(os.path.abspath(''), "Waveforms"));
@@ -378,10 +375,10 @@ class TestBench(QMainWindow):
         # Handles vertical
         horizontalLabel = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
         if horizontalLabel in self.__WaveTables: # Is an existing waveform
-            self.__MCUInterface.setDacMagnitude(1, self.__UiElems.Vertical_Amplitude_Spinbox.value())
-            self.__MCUInterface.setDacFrequency(1, self.__UiElems.Vertical_Frequency_Spinbox.value())
-            self.__MCUInterface.setCustomWaveformData(1, self.__WaveTables[verticalLabel])
-            self.__MCUInterface.setDacWaveform(1, 4)
+            self.__MCUInterface.setDacMagnitude(0, self.__UiElems.Horizontal_Amplitude_Spinbox.value())
+            self.__MCUInterface.setDacFrequency(0, self.__UiElems.Horizontal_Frequency_Spinbox.value())
+            self.__MCUInterface.setCustomWaveformData(0, self.__WaveTables[verticalLabel])
+            self.__MCUInterface.setDacWaveform(0, 4)
             self.__currentXWaveformOpt = self.__UiElems.Horizontal_Waveform_Combobox.currentIndex()
         elif horizontalLabel == "Load Custom": # Loads new waveform
             directories =  QFileDialog.getOpenFileNames(caption = "Select one or more waveform files.", directory = os.path.join(os.path.abspath(''), "Waveforms"));
@@ -403,6 +400,7 @@ class TestBench(QMainWindow):
             self.__MCUInterface.beginEvents()
 
     def getTimestampFilterFunc(self, xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes):
+        return None # TODO
         # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
         filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
         fastestFrequency = yFrequency
@@ -475,14 +473,14 @@ class TestBench(QMainWindow):
             xWaveTable  = self.__WaveTables[xWaveText]
             xStableTimes, xStableLUT = Analysis.findSteadyStateResp(systemModel, xWaveTable, xFrequency)
             xScreenLUT, xScaleFactor = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
-            xFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)).astype(numpy.dtype.int16)
+            xFunction     = lambda times: numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)
             # Y Axis
             yPeriod     = 1.0 / yFrequency
             yWaveText   = self.__UiElems.Vertical_Waveform_Combobox.currentText()
             yWaveTable  = self.__WaveTables[yWaveText]
             yStableTimes, yStableLUT = Analysis.findSteadyStateResp(systemModel, yWaveTable, yFrequency)
             yScreenLUT, yScaleFactor = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
-            yFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)).astype(numpy.dtype.int16)
+            yFunction     = lambda times: numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)
 
             # Sets filter
             filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
@@ -505,7 +503,7 @@ class TestBench(QMainWindow):
             xStableLUT    = numpy.append(xWaveTable, xWaveTable[0]) # Forces wraparound
             xStableTimes  = numpy.linspace(start = 0, stop = xPeriod, num = xStableLUT.shape[0])
             xScreenLUT, _ = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
-            xFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)).astype(numpy.dtype.int16)
+            xFunction     = lambda times: numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)
             # Y Axis
             yPeriod       = 1.0 / yFrequency
             yWaveText     = self.__UiElems.Vertical_Waveform_Combobox.currentText()
@@ -513,8 +511,7 @@ class TestBench(QMainWindow):
             yStableLUT    = numpy.append(yWaveTable, yWaveTable[0]) # Forces wraparound
             yStableTimes  = numpy.linspace(start = 0, stop = yPeriod, num = yStableLUT.shape[0])
             yScreenLUT, _ = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
-            yFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)).astype(numpy.dtype.int16)
-
+            yFunction     = lambda times: numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)
             # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
             filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
             if xFrequency > yFrequency:
