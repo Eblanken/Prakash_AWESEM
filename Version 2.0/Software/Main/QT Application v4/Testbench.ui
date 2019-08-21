@@ -170,26 +170,6 @@
       <height>21</height>
      </rect>
     </property>
-    <item>
-     <property name="text">
-      <string>Sine</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Triangle</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Sawtooth</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Load Custom</string>
-     </property>
-    </item>
    </widget>
    <widget class="QComboBox" name="Horizontal_Waveform_Combobox">
     <property name="geometry">
@@ -200,26 +180,6 @@
       <height>20</height>
      </rect>
     </property>
-    <item>
-     <property name="text">
-      <string>Sine</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Triangle</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Sawtooth</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Load Custom</string>
-     </property>
-    </item>
    </widget>
    <widget class="QLabel" name="Vertical_Amplitude_Label">
     <property name="geometry">
@@ -345,21 +305,6 @@
       <height>21</height>
      </rect>
     </property>
-    <item>
-     <property name="text">
-      <string>LTI Reconstruction</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Axis Waveform</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Linear</string>
-     </property>
-    </item>
    </widget>
    <widget class="QLabel" name="Sampling_LUT_Label">
     <property name="geometry">
@@ -371,7 +316,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>LUT Mode</string>
+     <string>LUT Model</string>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="Sampling_Phase_Horizontal_Spinbox">
@@ -469,10 +414,10 @@
    <widget class="QLabel" name="Plotter_Label">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>511</width>
-      <height>491</height>
+      <x>10</x>
+      <y>10</y>
+      <width>501</width>
+      <height>481</height>
      </rect>
     </property>
     <property name="frameShape">

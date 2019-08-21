@@ -318,7 +318,7 @@ class AWESEM_PiPion_Interface:
     #
     # Parameters:
     #   'dacChannel'    The target channel, either 1 or 0.
-    #   'waveformArray' The 256 value 16 bit integer LUT that the MCU should use (is linearily interpolated)
+    #   'waveformArray' The 256 value 16 bit integer LUT that the MCU should use (is linearily interpolated when played back)
     #
     # Note:
     #   Updated DAC waveform settings will not take effect until

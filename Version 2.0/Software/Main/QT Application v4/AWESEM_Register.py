@@ -40,7 +40,7 @@ class Register(threading.Thread):
     __yOffset                     = 0.0
     __MCUInterface                = None
     __DoSample                    = False
-    
+
     """
     def __init__(self, inputQueue, outputCallback):
         threading.Thread.__init__(self)
@@ -60,9 +60,9 @@ class Register(threading.Thread):
     def run(self):
         while True:
             if(len(self.__InputBuffer) > 0):
-                self.__OutputCallback(self.registerPoints(self.__InputBuffer.popleft()))         
+                self.__OutputCallback(self.registerPoints(self.__InputBuffer.popleft()))
     """
-    
+
     def run(self):
         while True:
             if self.__DoSample:
@@ -117,7 +117,7 @@ class Register(threading.Thread):
             boolY = filterY(newestBuffer[:, 1])
         boolTotal = numpy.logical_and(boolX, boolY)
         newestBuffer = newestBuffer[boolTotal, :]
-        
+
         if(newestBuffer.size > 0):
             # Applies translation function
             assignedPositionVals = numpy.stack((functionX(newestBuffer[:, 0]), functionY(newestBuffer[:, 1]), newestBuffer[:, 2]), 1).astype(int)
@@ -174,6 +174,8 @@ class Register(threading.Thread):
         if(callable(translationFunction)):
             self.__DataTranslateX = translationFunction
             return True
+        return False
+
     def setDataTranslateY(self, translationFunction):
         if(callable(translationFunction)):
             self.__DataTranslateY = translationFunction

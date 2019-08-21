@@ -23,12 +23,11 @@ mill = 1000000
 # Size of scan area
 RES_W = 250
 RES_H = 250
+PATH_BACKGROUNDIMAGE = "ProgramFiles/grid.png"
 
 # Defaults
 DEFAULT_ADC_SAMPLEFREQUENCY = 15.0 # KHz, frequency of ADC sampling.
-# Default driving waveform
-DEFAULT_VERTWA = 1 # Combobox waveform index: 0 = Sine, 1 = Triangle, 2 = Sawtooth TODO no direct correspondance to combobox to waveform type on teensy
-DEFAULT_HORZWA = 1 
+# Default driving waveform set by insert order
 # Default driving waveform frequency in hertz
 DEFAULT_VERTHZ = 50  # Hertz
 DEFAULT_HORZHZ = 0.03

@@ -37,6 +37,7 @@
  *               and to reset the DMA address.
  *            -> This should be done for all Audio entities.
 *             -> Manual offsets need to be adjusted.
+*     > Fixed by force synch
  */
 
 //----------------------------- Command List -----------------------------

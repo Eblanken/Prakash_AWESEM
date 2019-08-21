@@ -40,24 +40,24 @@
 #       - Seems like the scrolling message box does not update until a user interacts with it,
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
-#       - Serial is bad on mac (may not be fixable / may be just my mac),
-#         Stroffgen has had simililar problems and has not been able to solve)
-#       - Need to set phase offset on teensy side for triangle, sine, etc. to match definition
-#         client side which has falling for first half rising for second (not standard definition, makes filtering easier)
+#       - Need to finish implementing scale bar
 
 doChangeCPU = False # Set to true to set CPU affinity manually
 
+import ast
 import psutil
+import os
+import glob
 from   collections                   import deque
 import sys
 import numpy
 import datetime
+from   scipy                         import signal
 from   matplotlib                    import cm
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
 from   PyQt5.QtWidgets               import *
 from   PyQt5                         import uic
-# from   AWESEM_Testbench_Autocode     import Ui_MainWindow
 from   AWESEM_PiPion_Interface       import AWESEM_PiPion_Interface
 import AWESEM_Constants              as Const
 import AWESEM_Register               as Register
@@ -103,55 +103,141 @@ class Stream(QObject):
 # The main program
 class TestBench(QMainWindow):
 
+    # Internal components
     __MCUInterface      = None
     __registerTh        = None
     __consoleOut        = None
-    __ScanImage         = QImage('grid.png')
+    __ScanImage         = QImage(Const.PATH_BACKGROUNDIMAGE)
     __ColorMap          = cm.get_cmap('viridis')
     __UiElems           = None
+    __WaveTables        = None # Dictionary of {"Name": tableArray}
+    __SystemModels      = None # Dictionary of {"Name": signalContinousLTIModel}
 
+    # Trackers for GUI elements, used so that the menu will bounce back to previous menu item after selecting option to load custom data
+    __currentXWaveformOpt  = None
+    __currentYWaveformOpt  = None
+    __currentLUTModeOpt    = None 
+    
     def __init__(self, *args, **kwargs):
         super(TestBench, self).__init__(*args, **kwargs)
         # Structure is MCU -(interface)-> dataTh -(double buffer)-> registerTh -(callback)-> monitor
+        self.__UiElems = Ui_MainWindow()
+        self.__UiElems.setupUi(self)
         self.__MCUInterface = AWESEM_PiPion_Interface()
         self.__registerTh   = Register.Register(self.updateQTImage, self.__MCUInterface)
-        self.setupTheUi()
+        self.setUiProperties()
+        self.loadDefaultWaveTables()
+        self.loadDefaultModels()
+        self.linkUiCallbacks()
         self.setDefaults()
         self.__registerTh.start()
 
     def __del__(self):
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
 
+    def loadModel(self, filePath):
+        _, systemFullName = os.path.split(filePath) # Returns path and file name
+        systemName, _ = os.path.splitext(systemFullName) # Returns extension and name
+        if self.__UiElems.Sampling_LUT_Combobox.findText(systemName) == -1: 
+            try:
+                with open(filePath,'r') as inf:
+                    systemParameters = ast.literal_eval(inf.read())
+                self.__SystemModels[systemName] = signal.ZerosPolesGain(systemParameters['Zeros'], systemParameters['Poles'], systemParameters['Gain'])
+                self.__UiElems.Sampling_LUT_Combobox.blockSignals(True)
+                self.__UiElems.Sampling_LUT_Combobox.insertItem(0, systemName)
+                self.__UiElems.Sampling_LUT_Combobox.blockSignals(False)
+            except Exception as e:
+                print("Error: Failed to load model \"%s\" with error \"%s\"" % (filePath, e))
+        else:
+            print("Error: Stopped attempted load of redundant model, existing model at: %s" % (self.__UiElems.Sampling_LUT_Combobox.findText(waveName)))
+
+    def loadDefaultModels(self):
+        # Adds default options
+        self.__UiElems.Sampling_LUT_Combobox.blockSignals(True)
+        self.__UiElems.Sampling_LUT_Combobox.insertItem(0, "Import Model")
+        self.__UiElems.Sampling_LUT_Combobox.insertItem(0, "Linear")
+        self.__UiElems.Sampling_LUT_Combobox.insertItem(0, "Axis Waveform")
+        self.__UiElems.Sampling_LUT_Combobox.blockSignals(False)
+        # Loads in files
+        self.__SystemModels = dict()
+        availableModels = glob.glob(os.path.join(os.path.abspath(''), "SysModels", "*.txt"))
+        for filePath in availableModels:
+            self.loadModel(filePath)
+        self.__UiElems.Sampling_LUT_Combobox.setCurrentIndex(0)
+
+    # Loads wave table at the given directory into available waveform dictionary
+    def loadWaveform(self, filePath):
+        _, waveFullName = os.path.split(filePath) # Returns path and file name
+        waveName, _ = os.path.splitext(waveFullName) # Returns extension and name
+        if self.__UiElems.Vertical_Waveform_Combobox.findText(waveName) == -1: 
+            try:
+                dataVals = numpy.genfromtxt(filePath)
+                if(dataVals.shape[0] != 256):
+                    print("Error: Failed to load waveform \"%s\", length of %s not 256" % (filePath, dataVals.shape[0]))
+                elif(numpy.any(numpy.logical_or(dataVals > 32767, dataVals < -32767))):
+                    print("Error: Failed to load waveform \"%s\", some values larger than 16 bit limit" % (filePath))
+                else:
+                    self.__WaveTables[waveName] = dataVals
+                    self.__UiElems.Vertical_Waveform_Combobox.blockSignals(True)
+                    self.__UiElems.Horizontal_Waveform_Combobox.blockSignals(True)
+                    self.__UiElems.Horizontal_Waveform_Combobox.insertItem(0, waveName)
+                    self.__UiElems.Vertical_Waveform_Combobox.insertItem(0, waveName)
+                    self.__UiElems.Vertical_Waveform_Combobox.blockSignals(False)
+                    self.__UiElems.Horizontal_Waveform_Combobox.blockSignals(False)
+            except Exception as e:
+                print("Error: Failed to load waveform \"%s\" with error \"%s\"" % (filePath, e))
+        else:
+            print("Error: Stopped attempted load of redundant waveform, existing waveform at: %s" % (self.__UiElems.Vertical_Waveform_Combobox.findText(waveName)))
+
+    # Loads any waveform tables already in the "Waveforms" directory
+    def loadDefaultWaveTables(self):
+        # Add default options
+        self.__UiElems.Vertical_Waveform_Combobox.blockSignals(True)
+        self.__UiElems.Horizontal_Waveform_Combobox.blockSignals(True)
+        self.__UiElems.Horizontal_Waveform_Combobox.insertItem(0, "Load Custom")
+        self.__UiElems.Vertical_Waveform_Combobox.insertItem(0, "Load Custom")
+        self.__UiElems.Vertical_Waveform_Combobox.blockSignals(False)
+        self.__UiElems.Horizontal_Waveform_Combobox.blockSignals(False)
+        # Load files from other directories
+        self.__WaveTables = dict()
+        availableTables = glob.glob(os.path.join(os.path.abspath(''), "Waveforms", "*.csv"))
+        for filePath in availableTables:
+            self.loadWaveform(filePath)
+        self.__UiElems.Vertical_Waveform_Combobox.setCurrentIndex(0)
+        self.__UiElems.Horizontal_Waveform_Combobox.setCurrentIndex(0)
+    
+    def setUiProperties(self):
+        self.__UiElems.Vertical_Waveform_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
+        self.__UiElems.Horizontal_Waveform_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
+        self.__UiElems.Sampling_LUT_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
+        
     #
     # Description:
-    # TODO LUT, ScanMode, saveImage, imageCorrection
+    #   Links functions to button presses
     #
-    def setupTheUi(self):
-        self.__UiElems = Ui_MainWindow()
-        self.__UiElems.setupUi(self)
-
+    def linkUiCallbacks(self):
         # Scan Controls
         self.__UiElems.Scan_Pushbutton.clicked.connect(self.toggleScanning)
         self.__UiElems.Save_Pushbutton.clicked.connect(self.saveImage)
         self.__UiElems.Clear_Pushbutton.clicked.connect(self.clearScreen)
 
         # Vertical Axis
-        self.__UiElems.Vertical_Waveform_Combobox.currentTextChanged.connect(self.setWaveforms)
-        self.__UiElems.Vertical_Amplitude_Spinbox.valueChanged.connect(self.setWaveforms)
-        self.__UiElems.Vertical_Frequency_Spinbox.valueChanged.connect(self.setWaveforms)
+        self.__UiElems.Vertical_Waveform_Combobox.currentTextChanged.connect(self.updateWaveforms)
+        self.__UiElems.Vertical_Amplitude_Spinbox.valueChanged.connect(self.updateWaveforms)
+        self.__UiElems.Vertical_Frequency_Spinbox.valueChanged.connect(self.updateWaveforms)
 
         # Horizontal Axis
-        self.__UiElems.Horizontal_Waveform_Combobox.currentTextChanged.connect(self.setWaveforms)
-        self.__UiElems.Horizontal_Amplitude_Spinbox.valueChanged.connect(self.setWaveforms)
-        self.__UiElems.Horizontal_Frequency_Spinbox.valueChanged.connect(self.setWaveforms)
+        self.__UiElems.Horizontal_Waveform_Combobox.currentTextChanged.connect(self.updateWaveforms)
+        self.__UiElems.Horizontal_Amplitude_Spinbox.valueChanged.connect(self.updateWaveforms)
+        self.__UiElems.Horizontal_Frequency_Spinbox.valueChanged.connect(self.updateWaveforms)
 
         # Sampling
-        self.__UiElems.Sampling_Frequency_Spinbox.valueChanged.connect(self.setSamplingFrequency)
+        self.__UiElems.Sampling_Frequency_Spinbox.valueChanged.connect(self.updateSamplingFrequency)
         # self.__UiElems.Sampling_Averages_Spinbox.valueChanged.connect(self.setSamplingAverages) # TODO MCU only handles specific averaging quantites, need to create list in GUI
-        self.__UiElems.Sampling_Phase_Vertical_Spinbox.valueChanged.connect(self.setSamplingReconstruction)
-        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.valueChanged.connect(self.setSamplingReconstruction)
-        self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
-        self.__UiElems.Sampling_Collection_Combobox.currentIndexChanged.connect(self.setSamplingReconstruction)
+        self.__UiElems.Sampling_Phase_Vertical_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
+        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
+        self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
+        self.__UiElems.Sampling_Collection_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
 
         # Window
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
@@ -169,12 +255,10 @@ class TestBench(QMainWindow):
         # Scan Controls
 
         # Vertical Axis
-        self.__UiElems.Vertical_Waveform_Combobox.setCurrentIndex(Const.DEFAULT_VERTWA)
         self.__UiElems.Vertical_Amplitude_Spinbox.setValue(Const.DEFAULT_VERTAM)
         self.__UiElems.Vertical_Frequency_Spinbox.setValue(Const.DEFAULT_VERTHZ)
 
         # Horizontal Axis
-        self.__UiElems.Horizontal_Waveform_Combobox.setCurrentIndex(Const.DEFAULT_HORZWA)
         self.__UiElems.Horizontal_Amplitude_Spinbox.setValue(Const.DEFAULT_HORZAM)
         self.__UiElems.Horizontal_Frequency_Spinbox.setValue(Const.DEFAULT_HORZHZ)
 
@@ -190,7 +274,7 @@ class TestBench(QMainWindow):
 
     #
     # Description:
-    #   Function called as emission by stdout replacement. Prints
+    #   Function called as emission by stdo        self.linkUiCallbacks()ut replacement. Prints
     #   the console contents to the monitor. TODO Current monitor
     #   is too small and the user is allowed to edit the contents manually
     #   also the monitor should be self-clearing
@@ -242,7 +326,7 @@ class TestBench(QMainWindow):
 
 
     def clearScreen(self):
-        self.__ScanImage = QImage('grid.png')
+        self.__ScanImage = QImage(Const.PATH_BACKGROUNDIMAGE)
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     #
@@ -251,14 +335,7 @@ class TestBench(QMainWindow):
     #
     def calibrate(self):
         # Calibration procedure is:
-        # 1). Acquire data for full period of slowest axis
-        # 2). Assign linear positions to all data ("Modern Art") and determine
-        #     phase offsets.
-        # 3). Re-assign positions from driving function with the found phase
-        #     offsets.
-        # 4). Segment this image, from momnents and size of blobs that are not
-        #     touching the edge determine average spacing and make up a model
-        #     grid of squares to try to fit to this.
+        # 1). See Phase Reconstruction Demo
         # 5). Run simpleelastix registration to do final adjustment fitting the
         #     model grid to the observed data.
         print("Calibration not fully implemented")
@@ -277,123 +354,201 @@ class TestBench(QMainWindow):
     #   Updates the output waveforms to whatever is currently listed in
     #   the GUI.
     #
-    def setWaveforms(self):
-        waveformLabels = { # Values correspond to those on Teensy
-                "Sine"     : 0,
-                "Sawtooth" : 1, # Square is 2). currently unused
-                "Triangle" : 3
-                }
+    def updateWaveforms(self):
         # Handles vertical
-        self.__MCUInterface.setDacMagnitude(0, self.__UiElems.Vertical_Amplitude_Spinbox.value())
-        self.__MCUInterface.setDacFrequency(0, self.__UiElems.Vertical_Frequency_Spinbox.value())
-        result = waveformLabels.get(self.__UiElems.Vertical_Waveform_Combobox.currentText())
-        if(result is not None):
-            self.__MCUInterface.setDacWaveform(0, result)
+        verticalLabel = self.__UiElems.Vertical_Waveform_Combobox.currentText()
+        if verticalLabel in self.__WaveTables: # Is an existing waveform
+            self.__MCUInterface.setDacMagnitude(0, self.__UiElems.Vertical_Amplitude_Spinbox.value())
+            self.__MCUInterface.setDacFrequency(0, self.__UiElems.Vertical_Frequency_Spinbox.value())
+            self.__MCUInterface.setCustomWaveformData(0, self.__WaveTables[verticalLabel])
+            self.__MCUInterface.setDacWaveform(0, 4)
+            self.__currentYWaveformOpt = self.__UiElems.Vertical_Waveform_Combobox.currentIndex()
+        elif verticalLabel == "Load Custom": # Loads new waveform
+            directories =  QFileDialog.getOpenFileNames(caption = "Select one or more waveform files.", directory = os.path.join(os.path.abspath(''), "Waveforms"));
+            for currentDirectoryIndex in range(len(directories) - 1): # Last item is a status code
+                currentDirectory = directories[currentDirectoryIndex]
+                if(len(currentDirectory) > 0): # See above
+                    self.loadWaveform(currentDirectory[0])
+            self.__UiElems.Vertical_Waveform_Combobox.setCurrentIndex(self.__currentYWaveformOpt)
+            return
+        else:
+            print("Error: Invalid Waveform Choice for Vertical")
+            return
 
-        # Handles horizontal
-        self.__MCUInterface.setDacMagnitude(1, self.__UiElems.Horizontal_Amplitude_Spinbox.value())
-        self.__MCUInterface.setDacFrequency(1, self.__UiElems.Horizontal_Frequency_Spinbox.value())
-        result = waveformLabels.get(self.__UiElems.Horizontal_Waveform_Combobox.currentText())
-        if(result is not None):
-            self.__MCUInterface.setDacWaveform(1, result)
+        # Handles vertical
+        horizontalLabel = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
+        if horizontalLabel in self.__WaveTables: # Is an existing waveform
+            self.__MCUInterface.setDacMagnitude(1, self.__UiElems.Vertical_Amplitude_Spinbox.value())
+            self.__MCUInterface.setDacFrequency(1, self.__UiElems.Vertical_Frequency_Spinbox.value())
+            self.__MCUInterface.setCustomWaveformData(1, self.__WaveTables[verticalLabel])
+            self.__MCUInterface.setDacWaveform(1, 4)
+            self.__currentXWaveformOpt = self.__UiElems.Horizontal_Waveform_Combobox.currentIndex()
+        elif horizontalLabel == "Load Custom": # Loads new waveform
+            directories =  QFileDialog.getOpenFileNames(caption = "Select one or more waveform files.", directory = os.path.join(os.path.abspath(''), "Waveforms"));
+            for currentDirectoryIndex in range(len(directories) - 1): # Last item is a status code
+                currentDirectory = directories[currentDirectoryIndex]
+                if(len(currentDirectory) > 0): # See above
+                    self.loadWaveform(currentDirectory[0])
+            self.__UiElems.Horizontal_Waveform_Combobox.setCurrentIndex(self.__currentXWaveformOpt)
+            return
+        else:
+            print("Error: Invalid Waveform Choice for Horizontal")
+            return
 
+        # Updates
+        self.updateSamplingReconstruction()
         # Refreshes MCU
         if(self.__MCUInterface.isScanning()): # If not scanning will take effect on startup anyway
             self.__MCUInterface.pauseEvents()
             self.__MCUInterface.beginEvents()
 
-        # Updates LUT methods to reflect new waveform
-        self.setSamplingReconstruction()
+    def getTimestampFilterFunc(self, xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes):
+        # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
+        filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
+        fastestFrequency = yFrequency
+        fastestWaveLUT   = yScreenLUT
+        fastestTimeLUT   = yStableTimes
+        if xFrequency > yFrequency:
+            fastestFrequency = xFrequency
+            fastestWaveLUT   = xScreenLUT
+            fastestTimeLUT   = yStableTimes
+        fastestPeriod   = (1.0 / fastestFrequency)
+        filterFunction  = None
+        crestTime   = fastestTimeLUT[numpy.argmax(fastestWaveLUT)]
+        troughTime  = fastestTimeLUT[numpy.argmin(fastestWaveLUT)]
+        if filteringText == "Rising Fast":
+            def filterFunction(inputTime):
+                inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
+                if troughTime < crestTime: # rising during midpoint
+                    return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
+                # falling during midpoint
+                return numpy.logical_or(troughTime < inputTime, inputTime < crestTime)
+        elif filteringText == "Falling Fast":
+            def filterFunction(inputTime):
+                inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
+                if crestTime < troughTime: # falling during midpoint
+                    return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
+                # rising during midpoint
+                return numpy.logical_or(troughTime < inputTime, inputTime < crestTime)
+        return filterFunction
 
     #
     # Desription:
     #   Updates the lookup methods and modes used for
     #   interpreting sampled data.
     #
-    def setSamplingReconstruction(self):
-        xFunction       = None
-        yFunction       = None
-        xFilterFunction = None
-        yFilterFunction = None
-        xPhase          = self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value()
+    def updateSamplingReconstruction(self):
+        # What we have
+        xPhase          = self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value() # Only used for "Axis Waveform" mode currently
         yPhase          = self.__UiElems.Sampling_Phase_Vertical_Spinbox.value()
         xFrequency      = self.__UiElems.Horizontal_Frequency_Spinbox.value() # Spinbox is hz
         yFrequency      = self.__UiElems.Vertical_Frequency_Spinbox.value()   # Spinbox is hz
-        xAmplitude      = Const.RES_W * 0.5  # Fits into display image, centered in middle
-        yAmplitude      = Const.RES_H * 0.5 # Fits into display image, centered in middle
         currentLUTMode  = self.__UiElems.Sampling_LUT_Combobox.currentText()
-        # TODO add image analysis distortion correction mode
-        if(currentLUTMode == "Linear"):
-            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, xAmplitude, xFrequency, 0.0)
-            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, yAmplitude, yFrequency, 0.0)
+        # What will be determined
+        xFunction       = None
+        yFunction       = None
+        xScaleFactor    = None # Units of (microns / pixel)
+        yScaleFactor    = None
+        xFilterFunction = None
+        yFilterFunction = None
+        xTimeOffset     = 0.0
+        yTimeOffset     = 0.0
 
-        elif currentLUTMode == "Axis Waveform":
-            waveformFunctions = { # Values correspond to those on Teensy
-                    "Sine"     : Analysis.cos,
-                    "Sawtooth" : Analysis.sawTooth, # Square is 2). currently unused
-                    "Triangle" : Analysis.triangle
-                    }
-            # Assigns waveform
-            xWaveText = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
-            yWaveText = self.__UiElems.Vertical_Waveform_Combobox.currentText()
-            xFunction = lambda inputTime : waveformFunctions.get(xWaveText)(inputTime, xAmplitude, xFrequency, 0.0)
-            yFunction = lambda inputTime : waveformFunctions.get(yWaveText)(inputTime, yAmplitude, yFrequency, 0.0)
+        # Import new LTI model
+        if(currentLUTMode == "Import Model"):
+            directories =  QFileDialog.getOpenFileNames(caption = "Select one or more system model files.", directory = os.path.join(os.path.abspath(''), "SysModels"))
+            for currentDirectoryIndex in range(len(directories) - 1): # Last item is a status code
+                currentDirectory = directories[currentDirectoryIndex]
+                if(len(currentDirectory) > 0):
+                    self.loadModel(currentDirectory[0])
+            self.__UiElems.Sampling_LUT_Combobox.setCurrentIndex(self.__currentLUTModeOpt)
+            return
+        else:
+            self.__currentLUTModeOpt = self.__UiElems.Sampling_LUT_Combobox.currentIndex()
 
-            # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
-            filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
-            # Finds fastest axis
-            fastestFrequency = yFrequency
-            fastestWaveText  = yWaveText
-            if xFrequency > yFrequency:
-                fastestFrequency = xFrequency
-                fastestWaveText  = xWaveText
-            # Creates filter, definition of waveform functions is falling edge if less than period / 2
-            fastestPeriod   = (1.0 / fastestFrequency)
-            filterFunction  = None
-            filterCenter  = (fastestPeriod * 0.5) # TODO does not handle phases greater than +0.5 or less than -0.5 atm
-            if not filteringText == "All" and not fastestWaveText == "Sawtooth": # No filtering on sawtooth waveform or when none requested
-                if filteringText == "Rising Fast":
-                    def filterFunction(inputTime):
-                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
-                        return inputTime > filterCenter
-                elif filteringText == "Falling Fast":
-                    def filterFunction(inputTime):
-                        inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
-                        return inputTime < filterCenter
-                else:
-                    print("Error: Main_setSamplingReconstruction, bad sample filtering '%s'" % (filteringText))
-                    return
+        # Selected an existing system model
+        if currentLUTMode in self.__SystemModels:
+            systemModel = self.__SystemModels[currentLUTMode]
+            # X Axis
+            xPeriod     = 1.0 / xFrequency
+            xWaveText   = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
+            xWaveTable  = self.__WaveTables[xWaveText]
+            xStableTimes, xStableLUT = Analysis.findSteadyStateResp(systemModel, xWaveTable, xFrequency)
+            xScreenLUT, xScaleFactor = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
+            xFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)).astype(numpy.dtype.int16)
+            # Y Axis
+            yPeriod     = 1.0 / yFrequency
+            yWaveText   = self.__UiElems.Vertical_Waveform_Combobox.currentText()
+            yWaveTable  = self.__WaveTables[yWaveText]
+            yStableTimes, yStableLUT = Analysis.findSteadyStateResp(systemModel, yWaveTable, yFrequency)
+            yScreenLUT, yScaleFactor = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
+            yFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)).astype(numpy.dtype.int16)
 
-            # Assigns filter function
+            # Sets filter
+            filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
             if xFrequency > yFrequency:
                 xFilterFunction = filterFunction
             else:
                 yFilterFunction = filterFunction
 
-            # Assigns time offset
-            self.__registerTh.setDataOffsetX(xPhase * (1.0 / xFrequency))
-            self.__registerTh.setDataOffsetY(yPhase * (1.0 / yFrequency))
-        else:
-            print("Error: Main_setSamplingReconstruction, bad mode '%s'" % (currentLUTMode))
-            return
+        # Lays out data into modern art image for testing and calibration
+        elif(currentLUTMode == "Linear"):
+            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, Const.RES_W * 0.5, xFrequency, 0.0)
+            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, Const.RES_H * 0.5, yFrequency, 0.0)
 
-        # Sets filtering function
-        self.__registerTh.setDataFilterX(xFilterFunction)
-        self.__registerTh.setDataFilterY(yFilterFunction)
+        # Assumes that system plant is 1 (no distortion) and allows for manual phase adjustment
+        elif currentLUTMode == "Axis Waveform":
+            # X Axis
+            xPeriod       = 1.0 / xFrequency
+            xWaveText     = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
+            xWaveTable    = self.__WaveTables[xWaveText]
+            xStableLUT    = numpy.append(xWaveTable, xWaveTable[0]) # Forces wraparound
+            xStableTimes  = numpy.linspace(start = 0, stop = xPeriod, num = xStableLUT.shape[0])
+            xScreenLUT, _ = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
+            xFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)).astype(numpy.dtype.int16)
+            # Y Axis
+            yPeriod       = 1.0 / yFrequency
+            yWaveText     = self.__UiElems.Vertical_Waveform_Combobox.currentText()
+            yWaveTable    = self.__WaveTables[yWaveText]
+            yStableLUT    = numpy.append(yWaveTable, yWaveTable[0]) # Forces wraparound
+            yStableTimes  = numpy.linspace(start = 0, stop = yPeriod, num = yStableLUT.shape[0])
+            yScreenLUT, _ = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
+            yFunction     = lambda times: numpy.round(numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)).astype(numpy.dtype.int16)
+
+            # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
+            filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
+            if xFrequency > yFrequency:
+                xFilterFunction = filterFunction
+            else:
+                yFilterFunction = filterFunction
+
+            # Assigns offset
+            xTimeOffset = xPhase * (1.0 / xFrequency)
+            yTimeOffset = yPhase * (1.0 / yFrequency)
+
+        else:
+            print("Error: Main_updateSamplingReconstruction, bad mode '%s'" % (currentLUTMode))
+            return
 
         # Sets reconstruction functions
         if(xFunction is not None and yFunction is not None):
             self.__registerTh.setDataTranslateX(xFunction)
             self.__registerTh.setDataTranslateY(yFunction)
         else:
-            print("Error: Main_setSamplingReconstruction, bad translation functions")
+            print("Error: Main_updateSamplingReconstruction, bad translation functions")
+        # Sets filtering function
+        self.__registerTh.setDataFilterX(xFilterFunction)
+        self.__registerTh.setDataFilterY(yFilterFunction)
+        # Sets time offset
+        self.__registerTh.setDataOffsetX(xTimeOffset)
+        self.__registerTh.setDataOffsetY(yTimeOffset)
 
     #
     # Description:
     #   Increases sampling frequency and also alters sysem timing to
     #   keep up.
     #
-    def setSamplingFrequency(self): # TODO
+    def updateSamplingFrequency(self): # TODO
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz, need to provide hz
         self.__MCUInterface.setAdcFrequency(newFrequency)
         if(self.__MCUInterface.isScanning()):
