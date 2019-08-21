@@ -401,30 +401,21 @@ class TestBench(QMainWindow):
             self.__MCUInterface.pauseEvents()
             self.__MCUInterface.beginEvents()
 
-    def getTimestampFilterFunc(self, xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes):
-        # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
-        filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
-        fastestFrequency = yFrequency
-        fastestWaveLUT   = yScreenLUT
-        fastestTimeLUT   = yStableTimes
-        if xFrequency > yFrequency:
-            fastestFrequency = xFrequency
-            fastestWaveLUT   = xScreenLUT
-            fastestTimeLUT   = yStableTimes
-        fastestPeriod   = (1.0 / fastestFrequency)
+    def getTimestampFilterFunc(self, frequency, stableLUT, stableTimes):
+        period   = (1.0 / frequency)
         filterFunction  = None
-        crestTime   = fastestTimeLUT[numpy.argmax(fastestWaveLUT)]
-        troughTime  = fastestTimeLUT[numpy.argmin(fastestWaveLUT)]
+        crestTime   = stableTimes[numpy.argmax(stableLUT)]
+        troughTime  = stableTimes[numpy.argmin(stableLUT)]
         if filteringText == "Rising Fast":
             def filterFunction(inputTime):
-                inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
+                inputTime = numpy.fmod(inputTime, period) # TODO mod makes me sad
                 if troughTime < crestTime: # rising during midpoint
                     return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
                 # falling during midpoint
                 return numpy.logical_or(troughTime < inputTime, inputTime < crestTime)
         elif filteringText == "Falling Fast":
             def filterFunction(inputTime):
-                inputTime = numpy.fmod(inputTime, fastestPeriod) # TODO mod makes me sad
+                inputTime = numpy.fmod(inputTime, period) # TODO mod makes me sad
                 if crestTime < troughTime: # falling during midpoint
                     return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
                 # rising during midpoint
@@ -484,11 +475,11 @@ class TestBench(QMainWindow):
             yFunction     = lambda times: numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)
 
             # Sets filter
-            filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
-            if xFrequency > yFrequency:
-                xFilterFunction = filterFunction
-            else:
-                yFilterFunction = filterFunction
+            xFilteringText = self.__UiElems.Sampling_Horizontal_Collection_Combobox.currentText()
+            xFilterFunction = self.getTimestampFilterFunc(xFrequency, xScreenLUT, xStableTimes)
+            yFilteringText = self.__UiElems.Sampling_Vertical_Collection_Combobox.currentText()
+            yFilterFunction = self.getTimestampFilterFunc(yFrequency, yScreenLUT, yStableTimes)
+
 
         # Lays out data into modern art image for testing and calibration
         elif(currentLUTMode == "Linear"):
@@ -513,12 +504,12 @@ class TestBench(QMainWindow):
             yStableTimes  = numpy.linspace(start = 0, stop = yPeriod, num = yStableLUT.shape[0])
             yScreenLUT, _ = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
             yFunction     = lambda times: numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)
-            # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
-            filterFunction = self.getTimestampFilterFunc(xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes)
-            if xFrequency > yFrequency:
-                xFilterFunction = filterFunction
-            else:
-                yFilterFunction = filterFunction
+
+            # Sets filter
+            xFilteringText = self.__UiElems.Sampling_Horizontal_Collection_Combobox.currentText()
+            xFilterFunction = self.getTimestampFilterFunc(xFrequency, xScreenLUT, xStableTimes)
+            yFilteringText = self.__UiElems.Sampling_Vertical_Collection_Combobox.currentText()
+            yFilterFunction = self.getTimestampFilterFunc(yFrequency, yScreenLUT, yStableTimes)
 
             # Assigns offset
             xTimeOffset = xPhase * (1.0 / xFrequency)

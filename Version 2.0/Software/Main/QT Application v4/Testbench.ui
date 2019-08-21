@@ -273,7 +273,7 @@
    <widget class="QLabel" name="Sampling_Averages_Label">
     <property name="geometry">
      <rect>
-      <x>660</x>
+      <x>640</x>
       <y>280</y>
       <width>101</width>
       <height>21</height>
@@ -300,8 +300,8 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>340</y>
-      <width>111</width>
+      <y>360</y>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -309,8 +309,8 @@
    <widget class="QLabel" name="Sampling_LUT_Label">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>340</y>
+      <x>640</x>
+      <y>360</y>
       <width>101</width>
       <height>21</height>
      </rect>
@@ -323,9 +323,9 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>370</y>
-      <width>111</width>
-      <height>24</height>
+      <y>390</y>
+      <width>91</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="keyboardTracking">
@@ -347,8 +347,8 @@
    <widget class="QLabel" name="Sampling_Phase_Horizonal_Label">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>370</y>
+      <x>640</x>
+      <y>390</y>
       <width>121</width>
       <height>21</height>
      </rect>
@@ -360,8 +360,8 @@
    <widget class="QTextEdit" name="Console_Output_TextBox">
     <property name="geometry">
      <rect>
-      <x>530</x>
-      <y>460</y>
+      <x>540</x>
+      <y>470</y>
       <width>231</width>
       <height>41</height>
      </rect>
@@ -371,7 +371,7 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>430</y>
+      <y>450</y>
       <width>181</width>
       <height>21</height>
      </rect>
@@ -389,7 +389,7 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>500</y>
+      <y>520</y>
       <width>72</width>
       <height>20</height>
      </rect>
@@ -402,7 +402,7 @@
     <property name="geometry">
      <rect>
       <x>620</x>
-      <y>500</y>
+      <y>520</y>
       <width>91</width>
       <height>20</height>
      </rect>
@@ -431,9 +431,9 @@
     <property name="geometry">
      <rect>
       <x>540</x>
-      <y>400</y>
-      <width>111</width>
-      <height>24</height>
+      <y>410</y>
+      <width>91</width>
+      <height>21</height>
      </rect>
     </property>
     <property name="keyboardTracking">
@@ -455,8 +455,8 @@
    <widget class="QLabel" name="Sampling_Phase_Vertical_Label">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>400</y>
+      <x>640</x>
+      <y>410</y>
       <width>121</width>
       <height>21</height>
      </rect>
@@ -494,22 +494,22 @@
    <widget class="QLabel" name="Sampling_Collection_Label">
     <property name="geometry">
      <rect>
-      <x>660</x>
+      <x>640</x>
       <y>310</y>
-      <width>101</width>
+      <width>151</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Data Collection</string>
+     <string>Horizontal Data Collection</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="Sampling_Collection_Combobox">
+   <widget class="QComboBox" name="Sampling_Horizontal_Collection_Combobox">
     <property name="geometry">
      <rect>
       <x>540</x>
       <y>310</y>
-      <width>111</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -520,12 +520,12 @@
     </item>
     <item>
      <property name="text">
-      <string>Rising Fast</string>
+      <string>Rising</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Falling Fast</string>
+      <string>Falling</string>
      </property>
     </item>
    </widget>
@@ -534,7 +534,7 @@
      <rect>
       <x>540</x>
       <y>280</y>
-      <width>111</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -577,6 +577,44 @@
      <string>Clear Screen</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="Sampling_Vertical_Collection_Combobox">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>330</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>All</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Rising</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Falling</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="Sampling_Collection_Label_2">
+    <property name="geometry">
+     <rect>
+      <x>640</x>
+      <y>330</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Vertical Data Collection</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
@@ -593,13 +631,6 @@
      <string>System</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuSystem_Model">
-    <property name="title">
-     <string>System Model</string>
-    </property>
-    <addaction name="actionLoad_System_Model"/>
-    <addaction name="actionChoose_Model"/>
-   </widget>
    <widget class="QMenu" name="menuCalibration">
     <property name="title">
      <string>Calibration</string>
@@ -610,7 +641,6 @@
     <addaction name="actionCurrent_Correction_Profile"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuSystem_Model"/>
    <addaction name="menuCalibration"/>
   </widget>
   <action name="actionSave">
