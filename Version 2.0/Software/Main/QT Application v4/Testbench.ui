@@ -520,12 +520,12 @@
     </item>
     <item>
      <property name="text">
-      <string>Rising Horizontal</string>
+      <string>Rising Fast</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Falling Horizontal</string>
+      <string>Falling Fast</string>
      </property>
     </item>
    </widget>

@@ -54,6 +54,7 @@ import numpy
 import datetime
 from   scipy                         import signal
 from   matplotlib                    import cm
+from   qimage2ndarray                import byte_view
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
 from   PyQt5.QtWidgets               import *
@@ -116,8 +117,8 @@ class TestBench(QMainWindow):
     # Trackers for GUI elements, used so that the menu will bounce back to previous menu item after selecting option to load custom data
     __currentXWaveformOpt  = None
     __currentYWaveformOpt  = None
-    __currentLUTModeOpt    = None 
-    
+    __currentLUTModeOpt    = None
+
     def __init__(self, *args, **kwargs):
         super(TestBench, self).__init__(*args, **kwargs)
         # Structure is MCU -(interface)-> dataTh -(double buffer)-> registerTh -(callback)-> monitor
@@ -138,7 +139,7 @@ class TestBench(QMainWindow):
     def loadModel(self, filePath):
         _, systemFullName = os.path.split(filePath) # Returns path and file name
         systemName, _ = os.path.splitext(systemFullName) # Returns extension and name
-        if self.__UiElems.Sampling_LUT_Combobox.findText(systemName) == -1: 
+        if self.__UiElems.Sampling_LUT_Combobox.findText(systemName) == -1:
             try:
                 with open(filePath,'r') as inf:
                     systemParameters = ast.literal_eval(inf.read())
@@ -169,7 +170,7 @@ class TestBench(QMainWindow):
     def loadWaveform(self, filePath):
         _, waveFullName = os.path.split(filePath) # Returns path and file name
         waveName, _ = os.path.splitext(waveFullName) # Returns extension and name
-        if self.__UiElems.Vertical_Waveform_Combobox.findText(waveName) == -1: 
+        if self.__UiElems.Vertical_Waveform_Combobox.findText(waveName) == -1:
             try:
                 dataVals = numpy.genfromtxt(filePath)
                 if(dataVals.shape[0] != 256):
@@ -205,12 +206,12 @@ class TestBench(QMainWindow):
             self.loadWaveform(filePath)
         self.__UiElems.Vertical_Waveform_Combobox.setCurrentIndex(0)
         self.__UiElems.Horizontal_Waveform_Combobox.setCurrentIndex(0)
-    
+
     def setUiProperties(self):
         self.__UiElems.Vertical_Waveform_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
         self.__UiElems.Horizontal_Waveform_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
         self.__UiElems.Sampling_LUT_Combobox.setInsertPolicy(QComboBox.InsertAtTop)
-        
+
     #
     # Description:
     #   Links functions to button presses
@@ -294,12 +295,10 @@ class TestBench(QMainWindow):
     #
     def updateQTImage(self, valueVectors):
         if valueVectors is not None:
-            colorTool = QColor()
-            for value in valueVectors: # TODO this complicated color conversion makes me sad
-                colorVector = self.__ColorMap(float(value[2]) / 255.0)
-                colorTool.setRgb(colorVector[0] * 255, colorVector[1] * 255, colorVector[2] * 255)
-                self.__ScanImage.setPixel(int(value[0]), self.__ScanImage.height() - int(value[1]), colorTool.rgb())
-                #print("Value: %d, %d, %d" % (int(value[0]), int(value[1]), colorTool.rgb()))
+            valueVectorColors = (self.__ColorMap(float(valueVectors[:, 2]) / 255.0) * 255.0).astype(numpy.uint8) # Format is RGBA
+            interiorView = byte_view(self.__ScanImage)
+            valueVectors[:, 1] = -1 * (valueVectors[:, 1] - Const.RES_H)
+            interiorView[valueVectors[:, 1], valueVectors[:, 0]] = valueVectorColors
             self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     def toggleScanning(self):
@@ -400,7 +399,6 @@ class TestBench(QMainWindow):
             self.__MCUInterface.beginEvents()
 
     def getTimestampFilterFunc(self, xFrequency, yFrequency, xScreenLUT, yScreenLUT, xStableTimes, yStableTimes):
-        return None # TODO
         # Takes into account filtering data based on fast axis (eg. ignore while rising, falling, etc.)
         filteringText = self.__UiElems.Sampling_Collection_Combobox.currentText()
         fastestFrequency = yFrequency

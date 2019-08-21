@@ -281,7 +281,7 @@ float Dac_getSamplePhase(uint8_t channelAWaveform) {
       return 270.0;
       break;
   }
-  return 180;
+  return 0;
 }
 
 /*
