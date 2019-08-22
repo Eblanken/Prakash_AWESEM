@@ -26,7 +26,7 @@ RES_H = 250
 PATH_BACKGROUNDIMAGE = "ProgramFiles/grid.png"
 
 # Defaults
-DEFAULT_ADC_SAMPLEFREQUENCY = 15.0 # KHz, frequency of ADC sampling.
+DEFAULT_ADC_SAMPLEFREQUENCY = 40.0 # KHz, frequency of ADC sampling.
 # Default driving waveform set by insert order
 # Default driving waveform frequency in hertz
 DEFAULT_VERTHZ = 50  # Hertz
@@ -37,7 +37,9 @@ DEFAULT_HORZAM = 3.30
 # Phase offsets for sample reconstruction
 DEFAULT_HORZPHASE = 0.11 # Fraction of period of waveform, positive delays reading (shifts forward)
 DEFAULT_VERTPHASE = 0.00
-
+# Reconstruction data sources
+DEFAULT_HORZSRC   = 1 # (0) All, (1) Rising displacement, (2) Falling displacement
+DEFAULT_VERTSRC   = 1
 
 # Resolution of generated waveform LUT
 waveRes = 1000

@@ -31,6 +31,7 @@ class Register(threading.Thread):
     __yOffset                     = 0.0
     __MCUInterface                = None
     __DoSample                    = False
+    __doRun                       = True
 
     """
     def __init__(self, inputQueue, outputCallback):
@@ -55,11 +56,14 @@ class Register(threading.Thread):
     """
 
     def run(self):
-        while True:
+        while self.__doRun == True:
             if self.__DoSample:
                 value = self.__MCUInterface.getDataBuffer()
                 if value is not None:
                     self.__OutputCallback(self.registerPoints(value))
+    def close(self):
+        self.__doRun = False
+        
     #
     # Descriptition:
     #   Stops acquiring sample blocks for continous streaming.

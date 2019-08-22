@@ -73,7 +73,6 @@ class AWESEM_PiPion_Interface:
 
     # Safely closes the connection
     def __del__(self):
-        self.pauseEvents()
         self.close()
 
     # Prints information for debugging
@@ -92,6 +91,7 @@ class AWESEM_PiPion_Interface:
 
     # Safely closes the connection to the PiPion.
     def close(self):
+        self.pauseEvents()
         self._serialPort.close()
 
     def isScanning(self):

@@ -32,8 +32,6 @@
 #         should look into multiprocessing, even the raspberry pi has more than one core.
 #       - Work on and integrate analysis module. Use simpleitk
 #       - Find a framework to make preformance timing easier
-#       - Rebuild GUI, think of good way to start/stop scanning, take photos, etc.
-#         maybe look at Prof. Pease's microscope in greater detail.
 #
 #   TODO:
 #       - Only 5 of the 6 default settings for driving waveform trigger a callback when setting defaults, should check everything else as well
@@ -44,6 +42,7 @@
 
 doChangeCPU = False # Set to true to set CPU affinity manually
 
+import atexit
 import ast
 import psutil
 import os
@@ -134,6 +133,13 @@ class TestBench(QMainWindow):
         self.__registerTh.start()
 
     def __del__(self):
+        self.shutdownResources()
+        
+    def shutdownResources(self):
+        print("Closing Resources")
+        self.__MCUInterface.close()
+        self.__registerTh.close()
+        print("Resources Closed")
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
 
     def loadModel(self, filePath):
@@ -238,7 +244,9 @@ class TestBench(QMainWindow):
         self.__UiElems.Sampling_Phase_Vertical_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
         self.__UiElems.Sampling_Phase_Horizontal_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
         self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
-        self.__UiElems.Sampling_Collection_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
+        self.__UiElems.Sampling_Horizontal_Collection_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
+        self.__UiElems.Sampling_Vertical_Collection_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
+
 
         # Window
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
@@ -267,6 +275,8 @@ class TestBench(QMainWindow):
         self.__UiElems.Sampling_Frequency_Spinbox.setValue(Const.DEFAULT_ADC_SAMPLEFREQUENCY)
         self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
         self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
+        self.__UiElems.Sampling_Horizontal_Collection_Combobox.setCurrentIndex(Const.DEFAULT_HORZSRC)
+        self.__UiElems.Sampling_Vertical_Collection_Combobox.setCurrentIndex(Const.DEFAULT_VERTSRC)
         # TODO Averages
 
         # Console
@@ -401,25 +411,25 @@ class TestBench(QMainWindow):
             self.__MCUInterface.pauseEvents()
             self.__MCUInterface.beginEvents()
 
-    def getTimestampFilterFunc(self, frequency, stableLUT, stableTimes):
+    def getTimestampFilterFunc(self, filteringText, frequency, stableLUT, stableTimes):
         period   = (1.0 / frequency)
         filterFunction  = None
         crestTime   = stableTimes[numpy.argmax(stableLUT)]
         troughTime  = stableTimes[numpy.argmin(stableLUT)]
-        if filteringText == "Rising Fast":
+        if filteringText == "Rising":
             def filterFunction(inputTime):
                 inputTime = numpy.fmod(inputTime, period) # TODO mod makes me sad
                 if troughTime < crestTime: # rising during midpoint
                     return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
                 # falling during midpoint
                 return numpy.logical_or(troughTime < inputTime, inputTime < crestTime)
-        elif filteringText == "Falling Fast":
+        elif filteringText == "Falling":
             def filterFunction(inputTime):
                 inputTime = numpy.fmod(inputTime, period) # TODO mod makes me sad
                 if crestTime < troughTime: # falling during midpoint
-                    return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
+                    return numpy.logical_and(crestTime < inputTime, inputTime < troughTime)
                 # rising during midpoint
-                return numpy.logical_or(troughTime < inputTime, inputTime < crestTime)
+                return numpy.logical_or(crestTime < inputTime, inputTime < troughTime)
         return filterFunction
 
     #
@@ -476,9 +486,9 @@ class TestBench(QMainWindow):
 
             # Sets filter
             xFilteringText = self.__UiElems.Sampling_Horizontal_Collection_Combobox.currentText()
-            xFilterFunction = self.getTimestampFilterFunc(xFrequency, xScreenLUT, xStableTimes)
+            xFilterFunction = self.getTimestampFilterFunc(xFilteringText, xFrequency, xScreenLUT, xStableTimes)
             yFilteringText = self.__UiElems.Sampling_Vertical_Collection_Combobox.currentText()
-            yFilterFunction = self.getTimestampFilterFunc(yFrequency, yScreenLUT, yStableTimes)
+            yFilterFunction = self.getTimestampFilterFunc(yFilteringText, yFrequency, yScreenLUT, yStableTimes)
 
 
         # Lays out data into modern art image for testing and calibration
@@ -507,9 +517,9 @@ class TestBench(QMainWindow):
 
             # Sets filter
             xFilteringText = self.__UiElems.Sampling_Horizontal_Collection_Combobox.currentText()
-            xFilterFunction = self.getTimestampFilterFunc(xFrequency, xScreenLUT, xStableTimes)
+            xFilterFunction = self.getTimestampFilterFunc(xFilteringText, xFrequency, xScreenLUT, xStableTimes)
             yFilteringText = self.__UiElems.Sampling_Vertical_Collection_Combobox.currentText()
-            yFilterFunction = self.getTimestampFilterFunc(yFrequency, yScreenLUT, yStableTimes)
+            yFilterFunction = self.getTimestampFilterFunc(yFilteringText, yFrequency, yScreenLUT, yStableTimes)
 
             # Assigns offset
             xTimeOffset = xPhase * (1.0 / xFrequency)
@@ -555,4 +565,5 @@ if __name__ == "__main__":
         app = QApplication.instance()
     window = TestBench()
     window.show()
-    sys.exit(app.exec_())
+    exitStatus = app.exec_()
+    sys.exit(exitStatus)
