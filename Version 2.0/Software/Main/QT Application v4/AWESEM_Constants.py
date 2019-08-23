@@ -35,7 +35,7 @@ DEFAULT_HORZHZ = 0.03
 DEFAULT_VERTAM = 3.30 # Magnitude in volts
 DEFAULT_HORZAM = 3.30
 # Phase offsets for sample reconstruction
-DEFAULT_HORZPHASE = 0.11 # Fraction of period of waveform, positive delays reading (shifts forward)
+DEFAULT_HORZPHASE = 0.00 # Fraction of period of waveform, positive delays reading (shifts forward)
 DEFAULT_VERTPHASE = 0.00
 # Reconstruction data sources
 DEFAULT_HORZSRC   = 1 # (0) All, (1) Rising displacement, (2) Falling displacement

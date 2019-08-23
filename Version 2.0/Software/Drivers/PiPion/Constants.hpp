@@ -48,7 +48,7 @@
 #define DAC_SYNCRANGE 2        // > How close we can be to the rollover point when syncing (note that pointer can appear to skip if other interrupts happens during syncing)
  
 // Debugging
-//#define DAC_DEBUG              // > Uncomment to enable alternation whenever the waveform timing offsets are reset
+#define DAC_DEBUG              // > Uncomment to enable alternation whenever the waveform timing offsets are reset
 #define DAC_DEBUG_PIN_0 31     // > Provides square wave that alternates whenever offset reset is called for the A channel
 #define DAC_DEBUG_PIN_1 32     // > Provides square wave that alternates whenever offset reset is called for the B channel
 #define DAC_DEBUG_PIN_R 30     // > Provides high notch while resetting is taking place. Rises on start falls on completion.

@@ -18,12 +18,6 @@
 #      Simple Itk:          http://www.simpleitk.org
 #      Simple elastix:      https://simpleelastix.github.io
 #
-#   To successfully run this application
-#   download the following (make sure to run as admin, see script):
-#       - Anaconda (takes care of most stuff)
-#       - numpy-indexed (go to conda prompt and type "conda install numpy-indexed -c conda-forge")
-#       - pyserial (go to conda prompt and type "conda install pyserial")
-#
 #   Notes:
 #       - Attempted to use mpipe but worked inconsistently on my windows laptop
 #
@@ -38,8 +32,8 @@
 #       - Seems like the scrolling message box does not update until a user interacts with it,
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
-#       - Need to finish implementing scale bar
-#       - Displacement mapping seems to be flipped for LTI
+#       - Seems like there might be rollover or some sort of timing issue for the latter half of the rising part
+#         of some waveforms. They temporarily become very choppy.
 
 doChangeCPU = False # Set to true to set CPU affinity manually
 
@@ -477,10 +471,10 @@ class TestBench(QMainWindow):
             canvas = FigureCanvasAgg(fig);
             canvas.draw();
             s, (width, height) = canvas.print_to_buffer()
-            xAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4))) 
-        
+            xAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4)))
+
         self.__UiElems.Horizontal_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(xAxisImage.copy()).scaled(self.__UiElems.Horizontal_Scale_Label.width(), self.__UiElems.Horizontal_Scale_Label.height())))
-        
+
     def __updateYAxisLabel(self, yMaxMicrons):
         yAxisImage = numpy.zeros((10, 10, 4)) # As Alpha is zero will appear blank
         if yMaxMicrons is not None and yMaxMicrons > 0.0:
@@ -503,7 +497,7 @@ class TestBench(QMainWindow):
             canvas.draw();
             s, (width, height) = canvas.print_to_buffer()
             yAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4)))
-        
+
         self.__UiElems.Vertical_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(yAxisImage.copy()).scaled(self.__UiElems.Vertical_Scale_Label.width(), self.__UiElems.Vertical_Scale_Label.height())))
 
     #
@@ -650,7 +644,7 @@ class TestBench(QMainWindow):
         if self.__currentXLength != xTotalLength:
             self.__updateXAxisLabel(xTotalLength)
             self.__currentXLength = xTotalLength
-            
+
         if self.__currentYLength != yTotalLength:
             self.__updateYAxisLabel(yTotalLength)
             self.__currentYLength = yTotalLength
