@@ -6,8 +6,8 @@
 #
 # Description:
 #   This class has methods for an image analysis and distortion
-#   correction pipeline. 
-#   
+#   correction pipeline.
+#
 #   The general approach is as follows:
 #       1). Assign rough location by using driving waveform w/ phase shift
 #           a). Build "Modern Art" image by stacking fast waveforms from
@@ -20,23 +20,19 @@
 #               check close to the middle and edges of the image from a).
 #           c). Return phase offsets for use with a periodic mapping function.
 #       2). If imaging a grid, find a distortion correction map using splines.
-#           a). Retrieve an image generated from step 1, one that is already 
+#           a). Retrieve an image generated from step 1, one that is already
 #               roughly aligned.
-#           b). Segment this image and identify the lines between the grid squares, 
+#           b). Segment this image and identify the lines between the grid squares,
 #               sort these lines into two perpendicular camps
 #           c). Find the average distance between parralel lines, build a r
 #
-# TODO:
-#   -> Could implement basic LUT's better: https://shocksolution.com/2009/01/09/optimizing-python-code-for-fast-math/
-#                                          https://shocksolution.com/2008/12/11/a-lookup-table-for-fast-python-math/
-#
-#   -> Profile if/else versus trig triangle and mods
-#
 
 import numpy as np
-    
+from   scipy import signal
+from   math import ceil
+
 # ------------------- Image Processing Methods --------------
-    
+
 #
 # Description:
 #   Acquires a full pane of imaging data for the given parameters
@@ -61,15 +57,50 @@ def preformCalibration():
 #
 # Description:
 #   Finds distortion maps for each of four iamges (rising falling vertical,
-#   rising falling horizontal) seperated and given initial values using data 
+#   rising falling horizontal) seperated and given initial values using data
 #   from the retrievePhases method.
 #
-    
+
 # ------------------- Image Mapping Functions --------------
 
 #
 # Description
-#   Returns the value of a cose function for the given parameters, 
+#  Creates look up table that simulates the steady state response of the
+#  system to the given 256 sample input at the given frequency.
+#
+def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency, waveformVpp):
+    transientTime = 1.0
+    extendPeriods = 2.0
+    waveformPeriodLength    = 1.0 / waveformFrequency
+    wavetablePadded         = (np.append(wavetableRaw, wavetableRaw[0]) / 32767.0) * (waveformVpp / 2.0) # Convertes 16 bit signed integer to vpp, also pads with first sample at end to emulate wraparound, note that MCU does the same thing
+    wavetableTimes          = np.append(np.arange(start = 0, stop = waveformPeriodLength, step = waveformPeriodLength / float(wavetableRaw.shape[0])), waveformPeriodLength + waveformPeriodLength / float(wavetableRaw.shape[0]))
+    systemLUTLen = 256 # TODO see LTI reconstruction notes, there has to be a better way
+    # Also generally we should convert the continuous model to a discrete model
+    # Version here is really janky
+    numPeriods              = int(ceil(transientTime * waveformFrequency) + extendPeriods)
+    oneShotTimesLUT         = np.linspace(start = 0, stop = waveformPeriodLength, num = systemLUTLen)
+    oneShotValsLUT          = np.interp(oneShotTimesLUT, wavetableTimes, wavetablePadded)
+    extendedOneShotValsLUT  = np.tile(oneShotValsLUT, numPeriods) # Clears transient time + last period is clean
+    extendedOneShotTimesLUT = np.linspace(0, numPeriods * waveformPeriodLength, extendedOneShotValsLUT.shape[0])
+    newTimesLUT, newValsLUT, _ = signal.lsim(systemModel, extendedOneShotValsLUT, extendedOneShotTimesLUT, interp = "True")
+    newValsLUTLastPeriod  = newValsLUT[-systemLUTLen:]
+    newTimesLUTLastPeriod = newTimesLUT[-systemLUTLen:]
+    stableLUT               = newValsLUTLastPeriod
+    stableTimes             = newTimesLUTLastPeriod % waveformPeriodLength
+    return stableTimes, stableLUT
+
+# Normalizes the given lookup tabke to monitor dimensions and returns a scale
+# factor for the scale bar on the monitor
+def normalizeDisplacement(stableLUT, imageDimension):
+    min = np.min(stableLUT)
+    max = np.max(stableLUT)
+    totalDisp = np.round(max - min, decimals = 2)
+    screenLUT = np.round(((stableLUT - min) / totalDisp) * (imageDimension - 1)).astype(np.uint16) # Note that this is zero indexed
+    return screenLUT, totalDisp
+
+#
+# Description
+#   Returns the value of a cose function for the given parameters,
 #   migrated from WaveGen.
 #
 # Parameters:
@@ -87,7 +118,7 @@ def cos(inputTime, amplitude, frequency, phase, baseOffset = None):
     return amplitude * np.cos((inputTime * frequency - phase + 0.5) * 2.0 * np.pi) + baseOffset
 #
 # Description
-#   Returns the value of a triangle function for the given parameters, 
+#   Returns the value of a triangle function for the given parameters,
 #   migrated from WaveGen. Ranges from [0, 1.0].
 #
 # Parameters:
@@ -103,10 +134,10 @@ def triangle(inputTime, amplitude, frequency, phase, baseOffset = None):
     if baseOffset is None:
         baseOffset = amplitude
     return ((2.0 * amplitude) / np.pi) * (np.arcsin(np.sin(((inputTime * frequency) - phase - 0.25) * 2.0 * np.pi))) + baseOffset
-    
+
 #
 # Description
-#   Returns the value of a sawTooth function for the given parameters, 
+#   Returns the value of a sawTooth function for the given parameters,
 #   migrated from WaveGen. Note that the triangular wave is offset so that it is centered
 #   at zero.
 #

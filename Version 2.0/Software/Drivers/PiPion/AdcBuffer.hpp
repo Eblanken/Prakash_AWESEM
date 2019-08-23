@@ -18,8 +18,8 @@
 
 typedef struct {
   uint32_t number;
-  uint32_t aStart;
-  uint32_t bStart;
+  uint32_t start_0;
+  uint32_t start_1;
   uint32_t duration;
   uint8_t  data[ADC_BUFFERSIZE];
 } sampleBuffer;

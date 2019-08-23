@@ -25,8 +25,8 @@ float    Dac_getMagnitude(uint8_t targetChannel);
 bool     Dac_setArbWData(uint8_t channel, int16_t dataVals[256]); // Note that 
 bool     Dac_setWaveform(uint8_t targetChannel, uint8_t desiredWaveform);
 uint8_t  Dac_getWaveform(uint8_t targetChannel);
-uint32_t Dac_getAOffsetMicros();
-uint32_t Dac_getBOffsetMicros();
+uint32_t Dac_getOffsetMicros_0();
+uint32_t Dac_getOffsetMicros_1();
 void     Dac_pause();
 void     Dac_resume();
 
