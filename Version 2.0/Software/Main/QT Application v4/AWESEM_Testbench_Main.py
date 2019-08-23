@@ -342,7 +342,8 @@ class TestBench(QMainWindow):
     #
     def saveImage(self):
         settingsString = "[%s, %s]-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)-[%s, %s](Microns)" % (self.__UiElems.Horizontal_Waveform_Combobox.currentText(), self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value(), self.__currentXLength, self.__currentYLength)
-        if not self.__ScanImage.save("Captures\Capture_%s_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]"), settingsString), format = "BMP"):
+        totalString    = "Capture_%s_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]"), settingsString)
+        if not self.__ScanImage.save(os.path.join(os.getcwd(), 'Captures', totalString), format = "BMP"):
             print("Failed to Save Image")
 
     #
@@ -438,7 +439,6 @@ class TestBench(QMainWindow):
     #
     def cropInvisAway(self, image):
         imageInverseMask = numpy.logical_not(numpy.logical_or(image[:, :, 3] == 0, numpy.sum(image[:, :, :], axis = 2) == 255 * 4)) # Areas where plotting occured have high alpha values, others have an alpha value of zero or are white
-        print(image[1, 1, :])
         imageHorizontalSums = numpy.sum(imageInverseMask, axis = 0)
         nonZeroHoriz = numpy.nonzero(imageHorizontalSums)[0]
         firstHoriz   = nonZeroHoriz[0]

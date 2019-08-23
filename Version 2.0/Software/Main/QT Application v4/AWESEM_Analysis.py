@@ -94,7 +94,7 @@ def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency, waveformVp
 def normalizeDisplacement(stableLUT, imageDimension):
     min = np.min(stableLUT)
     max = np.max(stableLUT)
-    totalDisp = max - min
+    totalDisp = np.round(max - min, decimals = 2)
     screenLUT = np.round(((stableLUT - min) / totalDisp) * (imageDimension - 1)).astype(np.uint16) # Note that this is zero indexed
     return screenLUT, totalDisp
 
