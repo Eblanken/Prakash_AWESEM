@@ -163,7 +163,7 @@ void adc0_isr() {
     duration = 0;
     currentSampleCount = 0;
     currentSample = AdcBuffer_getHead();
-    currentSample->aStart = Dac_getAOffsetMicros();
-    currentSample->bStart = Dac_getBOffsetMicros();
+    currentSample->start_0 = Dac_getOffsetMicros_0();
+    currentSample->start_1 = Dac_getOffsetMicros_1();
   }
 }

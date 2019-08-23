@@ -39,6 +39,7 @@
 #         the whole thing might be a waste of time anyway. I was trying to make seeing errors easier
 #         for non-developer users.
 #       - Need to finish implementing scale bar
+#       - Displacement mapping seems to be flipped for LTI
 
 doChangeCPU = False # Set to true to set CPU affinity manually
 
@@ -134,7 +135,7 @@ class TestBench(QMainWindow):
 
     def __del__(self):
         self.shutdownResources()
-        
+
     def shutdownResources(self):
         print("Closing Resources")
         self.__MCUInterface.close()
@@ -266,18 +267,18 @@ class TestBench(QMainWindow):
         # Vertical Axis
         self.__UiElems.Vertical_Amplitude_Spinbox.setValue(Const.DEFAULT_VERTAM)
         self.__UiElems.Vertical_Frequency_Spinbox.setValue(Const.DEFAULT_VERTHZ)
+        self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
 
         # Horizontal Axis
         self.__UiElems.Horizontal_Amplitude_Spinbox.setValue(Const.DEFAULT_HORZAM)
         self.__UiElems.Horizontal_Frequency_Spinbox.setValue(Const.DEFAULT_HORZHZ)
+        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
 
         # Sampling
         self.__UiElems.Sampling_Frequency_Spinbox.setValue(Const.DEFAULT_ADC_SAMPLEFREQUENCY)
-        self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
-        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
         self.__UiElems.Sampling_Horizontal_Collection_Combobox.setCurrentIndex(Const.DEFAULT_HORZSRC)
         self.__UiElems.Sampling_Vertical_Collection_Combobox.setCurrentIndex(Const.DEFAULT_VERTSRC)
-        # TODO Averages
+        # TODO sample averaging
 
         # Console
         self.__UiElems.Console_Preformance_Checkbox.setCheckState(1)
@@ -314,6 +315,11 @@ class TestBench(QMainWindow):
             interiorView[valueVectors[:, 1], valueVectors[:, 0], 3] = valueVectorColors[:, 3]
             self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
+    #
+    # Description:
+    #   Starts and stops data acquisiton and waveform generation. Updates button
+    #   text as well.
+    #
     def toggleScanning(self):
         if(self.__MCUInterface.isScanning()):
             self.__UiElems.Scan_Pushbutton.setText("Start Scanning")
@@ -326,28 +332,37 @@ class TestBench(QMainWindow):
 
     #
     # Description:
-    #   Brings up dialog to save the image currently on the monitor to the disk.
+    #   Saves image currenly on display to memory under the "Captures"
+    #   folder.
     #
     def saveImage(self):
-        settingsString = "[%s, %s]-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)-[%0.2f, %0.2f](2pi)" % (self.__UiElems.Horizontal_Waveform_Combobox.currentText(), self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value(), self.__UiElems.Sampling_Phase_Horizontal_Spinbox.value(), self.__UiElems.Sampling_Phase_Vertical_Spinbox.value())
+        settingsString = "[%s, %s]-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)" % (self.__UiElems.Horizontal_Waveform_Combobox.currentText(), self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value())
         if not self.__ScanImage.save("Captures\Capture_%s_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]"), settingsString), format = "BMP"):
             print("Failed to Save Image")
 
-
+    #
+    # Description:
+    #   Clears image currently on monitor.
+    #
     def clearScreen(self):
         self.__ScanImage = QImage(Const.PATH_BACKGROUNDIMAGE)
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     #
     # Description:
+    #   Does a frequency survey to approximate the impulse response of the system.
+    #   See phase demo for details.
     #
+    def calibrateLTIModel(self):
+        print("LTI Calibration not fully implemented")
+
     #
-    def calibrate(self):
-        # Calibration procedure is:
-        # 1). See Phase Reconstruction Demo
-        # 5). Run simpleelastix registration to do final adjustment fitting the
-        #     model grid to the observed data.
-        print("Calibration not fully implemented")
+    # Description:
+    #   Builds a displacement map to capture non-linear displacement distortion
+    #   not accounted for by the LTI model.
+    #
+    def calibrateDisplacementGrid(self):
+        print("Displacement Grid Calibration not fully implemented.")
 
     #
     # Descripion:
@@ -411,6 +426,14 @@ class TestBench(QMainWindow):
             self.__MCUInterface.pauseEvents()
             self.__MCUInterface.beginEvents()
 
+    #
+    # Description
+    #   Returns an executable callback that filters timestamps based on whether
+    #   they correspond to times in the displacement LUT where the stage is rising
+    #   (after the lowest displacement point and before the highest point)
+    #   or falling. Returns None if no filtering should occur based on the filter
+    #   text.
+    #
     def getTimestampFilterFunc(self, filteringText, frequency, stableLUT, stableTimes):
         period   = (1.0 / frequency)
         filterFunction  = None
@@ -544,10 +567,9 @@ class TestBench(QMainWindow):
 
     #
     # Description:
-    #   Increases sampling frequency and also alters sysem timing to
-    #   keep up.
+    #   Increases sampling frequency.
     #
-    def updateSamplingFrequency(self): # TODO
+    def updateSamplingFrequency(self):
         newFrequency = self.__UiElems.Sampling_Frequency_Spinbox.value() * 1000.0 # Spinbox shows kHz, need to provide hz
         self.__MCUInterface.setAdcFrequency(newFrequency)
         if(self.__MCUInterface.isScanning()):

@@ -10,34 +10,9 @@
  *  maintains messanger commands and coordinates DAC and ADC work.
  *  The AdcManager class internally maintains sample buffers and allows
  *  for transfers. The DacManager class keeps track of the waveform outputs.
- *  I tried to use messageCMD but there seems to be no easy way to
- *  pass arrays/custom structs efficiently, which makes efficient transfer of sample buffers to the coumputer difficult.
- *  I ended up just implementing my own thing and it works well.
  *
  * Install List:
  *  - Teensyduino:    https://www.pjrc.com/teensy/teensyduino.html
- *
- * TODO:
- *  - When events halt, debugging lines should fall
- *  - Synchronization between timing and phase of driving waveform is an issue.
- *    > Originally setting phase had no effect, found out that this is because the "phase" is a phase offset rather than the actual current phase
- *      in the waveform. Original discussion here:
- *      -> https://forum.pjrc.com/threads/54370-Waveform-begin-no-longer-resets-the-wave?highlight=phase
- *      -> Solution was to modify the phase-accumulator instead of the phase (phase modification relative to current value)
- *         https://github.com/PaulStoffregen/Audio/pull/275/files.
- *    > Once we were adjusting the actual progress into the waveform, it became clear that there was a significant latency when adjusting values and
- *      that there was a non-trivial variance on the order of 20% of the waveform's total phase in some cases.
- *        -> The audio library takes advantage of DMA and other peripherals efficiently by passing around large buffers of audio samples
- *           rather than individual samples. This is the source of the latency/variance. I was able to mitigate this by setting the buffer
- *           size to 16 items.
- *        -> The best solution would be to reset all of the items in the audio chain whenever we begin our DAC output so that everything
- *           is in a known initial state. At that point we can adjust for the latency manually.
- *            -> The output dac has two buffers per channel, which explains the variance. The variance was the difference between the constant assumed final DMA read 
- *               position and the actual position depending on when exactly you stopped scanning. The solution was to add a function to clear the output dac buffers
- *               and to reset the DMA address.
- *            -> This should be done for all Audio entities.
-*             -> Manual offsets need to be adjusted.
-*     > Fixed by force synch
  */
 
 //----------------------------- Command List -----------------------------
@@ -121,12 +96,6 @@ volatile bool lastSentOn = false;
  */
 void debugInit() {
   pinMode(LED_MAIN, OUTPUT);
-  /*
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_YELLOW, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  */
   digitalWriteFast(LED_MAIN, LOW);
   #ifdef SERIAL_DEBUG
   pinMode(SERIAL_DEBUG_PIN_BUFFERSENDOFF, OUTPUT);
@@ -162,6 +131,11 @@ uint8_t getSerialUInt8() {
   return (uint8_t) Serial.read();
 }
 
+
+/*
+ * Description:
+ *  Tries to retrieve a two byte signed integer with timeout.
+ */
 int16_t getSerialInt16() {
   elapsedMillis timeOut = 0;
   while(Serial.available() < 2) {
@@ -408,16 +382,14 @@ void parseGetBuffer() {
     UINT32UNION_t currentCount;
     currentCount.number = newData->number;
     Serial.write(currentCount.bytes, 4);
-    UINT32UNION_t aStartVal;
-    UINT32UNION_t bStartVal;
-    UINT32UNION_t durationVal;
-    aStartVal.number = newData->aStart; //newData.aStart;
-    bStartVal.number = newData->bStart; //newData.bStart;
+    UINT32UNION_t start_0Val, start_1Val, durationVal;
+    start_0Val.number = newData->start_0; //newData.start_0;
+    start_1Val.number = newData->start_1; //newData.start_1;
     durationVal.number = newData->duration; //newData.duration;
-    Serial.write(aStartVal.bytes, 4); // Start relative to last A start (microSeconds)
-    Serial.write(bStartVal.bytes, 4); // Start relative to last B start (microSeconds)
+    Serial.write(start_0Val.bytes, 4); // Start relative to last start of dac 0 (microSeconds)
+    Serial.write(start_1Val.bytes, 4); // Start relative to last start of dac 1 (microSeconds)
     Serial.write(durationVal.bytes, 4); // Duration (microSeconds)
-    Serial.write(newData->data, ADC_BUFFERSIZE); // May be inefficient, TODO is there a way to pass a buffer pointer?
+    Serial.write(newData->data, ADC_BUFFERSIZE);
     #ifdef SERIAL_DEBUG
     digitalWriteFast(SERIAL_DEBUG_PIN_BUFFERSENDOFF, lastSentOn);
     lastSentOn = !lastSentOn;
@@ -426,6 +398,22 @@ void parseGetBuffer() {
     Serial.write('F');
   }
   Serial.send_now();
+}
+
+/*
+ * Description:
+ *  Shuts down any debug lines that are currently running
+ */
+void dropDebugLines() {
+  #ifdef DAC_DEBUG
+  digitalWrite(DAC_DEBUG_PIN_0, LOW);
+  digitalWrite(DAC_DEBUG_PIN_1, LOW);
+  digitalWrite(DAC_DEBUG_PIN_R, LOW);
+  #endif
+  #ifdef ADC_DEBUG
+  digitalWrite(ADC_DEBUG_PIN_SAMPLE, LOW);
+  digitalWrite(ADC_DEBUG_PIN_BUFFERXCHANGE, LOW);
+  #endif
 }
 
 /*
@@ -449,6 +437,7 @@ void parseStartEvents() {
 void parseStopEvents() {
   Adc_pause();
   Dac_pause();
+  dropDebugLines();
   Serial.write('A');
   Serial.send_now();
 }

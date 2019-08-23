@@ -35,22 +35,22 @@
 // ------------------------ Constants for DAC Manager --------------------------
 
 // Defaults tha can be changed by serial commands
-#define DAC_DEFAULT_FREQUENCY_A 35   // > Frequency in hertz
-#define DAC_DEFAULT_FREQUENCY_B 0.05 // > Frequency in hertz
-#define DAC_DEFAULT_WAVEFORM_A 1     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-#define DAC_DEFAULT_WAVEFORM_B 1     // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-#define DAC_DEFAULT_MAGNITUDE_A 3.3  // > Magnitude relative to reference, [0 - 1] * vRef
-#define DAC_DEFAULT_MAGNITUDE_B 3.3  // > Magnitude relative to reference, [0 - 1] * vRef
+#define DAC_DEFAULT_FREQUENCY_0 35.0 // > Frequency in hertz
+#define DAC_DEFAULT_FREQUENCY_1 0.05 // > Frequency in hertz
+#define DAC_DEFAULT_WAVEFORM_0  1    // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+#define DAC_DEFAULT_WAVEFORM_1  1    // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+#define DAC_DEFAULT_VPP_0 3.3        // > Waveform Vpp
+#define DAC_DEFAULT_VPP_1 3.3        // > Waveform Vpp
 // Standard
 #define DAC_REFERENCE EXTERNAL // > Options: EXTERNAL (0 - 3.3) and INTERNAL (0 - 1.2)
-#define DAC_APRIORITY 1        // > Priority for timer reset functions
-#define DAC_BPRIORITY 2        //   for both axis for timing tracking.
-#define DAC_SYNCRANGE 2        // > How close we can be to the rollover point when syncing (note that pointer can skip if other interrupts happens during syncing)
+#define DAC_PRIORITY_0 1       // > Priority for timer reset functions
+#define DAC_PRIORITY_1 2       //   for both axis for timing tracking.
+#define DAC_SYNCRANGE 2        // > How close we can be to the rollover point when syncing (note that pointer can appear to skip if other interrupts happens during syncing)
  
 // Debugging
 //#define DAC_DEBUG              // > Uncomment to enable alternation whenever the waveform timing offsets are reset
-#define DAC_DEBUG_PIN_A 31     // > Provides square wave that alternates whenever offset reset is called for the A channel
-#define DAC_DEBUG_PIN_B 32     // > Provides square wave that alternates whenever offset reset is called for the B channel
+#define DAC_DEBUG_PIN_0 31     // > Provides square wave that alternates whenever offset reset is called for the A channel
+#define DAC_DEBUG_PIN_1 32     // > Provides square wave that alternates whenever offset reset is called for the B channel
 #define DAC_DEBUG_PIN_R 30     // > Provides high notch while resetting is taking place. Rises on start falls on completion.
 
 // ----------------------- Constans for Main Function --------------------------

@@ -17,11 +17,8 @@
 #
 # TODO:
 #   - Connection validation and updating is bad, revisit this module
-#   - b and a offsets where switched the whole time! Revisit what is defined as
-#     a and b.
-#   - Currently internal timing jumps around a bit which causes jumps. Probably rollover on the micros
-#     used inside of the MCU. Should tie an interrupt to the audio output library
-#     to handle the timing.
+#   - Currently MCU code offset tracking rolls over after roughly 33 seconds, do
+#     not set frequency below 0.03.
 
 # ----------------------- Imported Libraries ------------------------------------
 
@@ -487,12 +484,12 @@ class AWESEM_PiPion_Interface:
                     self._lastPacketID = currentNumber[0]
                     # Result consists of three 32 bit integers and then an
                     # array of bytes.
-                    aOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
-                    bOffset  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
+                    offset_0  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
+                    offset_1  = (struct.unpack('<I', self._readBytes(4)))[0] # In microseconds
                     duration = (struct.unpack('<I', self._readBytes(4)))[0]
                     byteList = self._readBytes(self._SERIAL_DATASTRUCT_BUFFERSIZE)
                     byteArray = numpy.frombuffer(byteList, numpy.uint8)
-                    value = numpy.stack((numpy.linspace(aOffset, aOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, numpy.linspace(bOffset, bOffset + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, byteArray), 1) # format is [data, aTimes, bTimes] as column vectors, times in seconds
+                    value = numpy.stack((numpy.linspace(offset_0, offset_0 + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, numpy.linspace(offset_1, offset_1 + duration, self._SERIAL_DATASTRUCT_BUFFERSIZE) / 1000000.0, byteArray), 1) # format is [data, aTimes, bTimes] as column vectors, times in seconds
                     return value
                 #elif response == b'F':
                     #if self._verbose:

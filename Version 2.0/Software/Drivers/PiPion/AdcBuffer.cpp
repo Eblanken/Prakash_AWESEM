@@ -5,15 +5,9 @@
  * Date:   8/12/2018
  *
  * Description:
- *  This is a simple circularBuffer, there are ton of good circularbuffer libraries avialable online
- *  but mine is written to prioritize writing in place. There may be another library online but oh well.
- *  Also this buffer style is fairly unsafe.
- *
- *  The intent is to write data to the head and then advance forward, while reading data from the tail and
- *  retreating forward.
- *
- *  Note: Data is never explicitly cleared during any operation, it is assumed that data is overwritten by whatever
- *    entity is calling for pointers to the head of the buffer.
+ *  This is a simple circular buffer that enables writing in place. Keeping up with new data is prioritized over
+ *  retaining old information. Data is never explicitly cleared during any operation, it is assumed that data is overwritten by whatever
+ *  entity is calling for pointers to the head of the buffer.
  *
  *  Warning: As of right now there is no security for overwriting data while the main thread attempts to read it, maybe
  *    this can be addressed with a lock system but also a real buffer may be better if we can get away with it.

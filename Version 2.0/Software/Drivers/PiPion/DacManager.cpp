@@ -20,22 +20,21 @@
 
 //----------------------- Internal Variables ---------------------
 
-IntervalTimer            AUpdater;
-IntervalTimer            BUpdater;
-uint32_t                 lastACrossover;
-uint32_t                 lastBCrossover;
-float                    channelAFrequency = DAC_DEFAULT_FREQUENCY_A; // > Frequency in hertz
-float                    channelBFrequency = DAC_DEFAULT_FREQUENCY_B; // > Frequency in hertz
-uint8_t                  channelAWaveform  = DAC_DEFAULT_WAVEFORM_A;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-uint8_t                  channelBWaveform  = DAC_DEFAULT_WAVEFORM_B;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
-float                    channelAMagnitude = DAC_DEFAULT_MAGNITUDE_A; // > Magnitude relative to reference, [0 - 1] * vRef
-float                    channelBMagnitude = DAC_DEFAULT_MAGNITUDE_B; // > Magnitude relative to reference, [0 - 1] * vRef
-AudioSynthWaveform       ChannelA;
-AudioSynthWaveform       ChannelB;
+IntervalTimer            lastCrossover_0_updater;
+IntervalTimer            lastCrossover_1_updater;
+uint32_t                 lastCrossover_0;
+uint32_t                 lastCrossover_1;
+float                    waveSynth_0_Frequency = DAC_DEFAULT_FREQUENCY_0; // > Frequency in hertz
+float                    waveSynth_1_Frequency = DAC_DEFAULT_FREQUENCY_1; // > Frequency in hertz
+uint8_t                  waveSynth_0_Waveform  = DAC_DEFAULT_WAVEFORM_0;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+uint8_t                  waveSynth_1_Waveform  = DAC_DEFAULT_WAVEFORM_1;  // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+float                    waveSynth_0_Vpp = DAC_DEFAULT_VPP_0; // > Magnitude relative to reference, [0 - 1] * vRef
+float                    waveSynth_1_Vpp = DAC_DEFAULT_VPP_1; // > Magnitude relative to reference, [0 - 1] * vRef
+AudioSynthWaveform       waveSynth_0;
+AudioSynthWaveform       waveSynth_1;
 AudioOutputAnalogStereo  Dacs;
-AudioConnection          PatchCord2(ChannelA, 0, Dacs, 0);
-AudioConnection          PatchCord1(ChannelB, 0, Dacs, 1);
-bool                     debugAToggleOnPeriod = false;
+AudioConnection          PatchCord2(waveSynth_0, 0, Dacs, 0);
+AudioConnection          PatchCord1(waveSynth_1, 0, Dacs, 1);
 bool                     debugBToggleOnPeriod = false;
 
 //----------------------- Functions ----------------------
@@ -55,14 +54,14 @@ void Dac_init() {
   pinMode(A22, OUTPUT);
   AudioMemory(10);
   Dacs.analogReference(DAC_REFERENCE);
-  AUpdater.priority(DAC_APRIORITY);
-  BUpdater.priority(DAC_BPRIORITY);
+  lastCrossover_0_updater.priority(DAC_PRIORITY_0);
+  lastCrossover_1_updater.priority(DAC_PRIORITY_1);
   #ifdef DAC_DEBUG
-  pinMode(DAC_DEBUG_PIN_A, OUTPUT);
-  pinMode(DAC_DEBUG_PIN_B, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_0, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_1, OUTPUT);
   pinMode(DAC_DEBUG_PIN_R, OUTPUT);
-  digitalWrite(DAC_DEBUG_PIN_A, LOW);
-  digitalWrite(DAC_DEBUG_PIN_B, LOW);
+  digitalWrite(DAC_DEBUG_PIN_0, LOW);
+  digitalWrite(DAC_DEBUG_PIN_1, LOW);
   digitalWrite(DAC_DEBUG_PIN_R, LOW);
   #endif
 }
@@ -80,10 +79,10 @@ void Dac_init() {
  */
 bool Dac_setFrequency(uint8_t targetChannel, float newFrequency) {
   if(targetChannel == 0) {
-    channelAFrequency = newFrequency;
+    waveSynth_0_Frequency = newFrequency;
     return true;
   } else if(targetChannel == 1){
-    channelBFrequency = newFrequency;
+    waveSynth_1_Frequency = newFrequency;
     return true;
   }
   return false;
@@ -98,9 +97,9 @@ bool Dac_setFrequency(uint8_t targetChannel, float newFrequency) {
  */
 float Dac_getFrequency(uint8_t targetChannel) {
   if(targetChannel == 0) {
-    return channelAFrequency;
+    return waveSynth_0_Frequency;
   } else if(targetChannel == 1) {
-    return channelBFrequency;
+    return waveSynth_1_Frequency;
   }
   return 0;
 }
@@ -118,10 +117,10 @@ bool Dac_setMagnitude(uint8_t targetChannel, float magnitude) {
     magnitude = 1.0;
   }
   if(targetChannel == 0) {
-    channelAMagnitude = magnitude;
+    waveSynth_0_Vpp = magnitude;
     return true;
   } else if(targetChannel == 1){
-    channelBMagnitude = magnitude;
+    waveSynth_1_Vpp = magnitude;
     return true;
   }
   return false;
@@ -136,9 +135,9 @@ bool Dac_setMagnitude(uint8_t targetChannel, float magnitude) {
  */
 float Dac_getMagnitude(uint8_t targetChannel) {
   if(targetChannel == 0) {
-    return channelAMagnitude * DAC_BASEVOLTAGE;
+    return waveSynth_0_Vpp * DAC_BASEVOLTAGE;
   } else if(targetChannel == 1) {
-    return channelBMagnitude * DAC_BASEVOLTAGE;
+    return waveSynth_1_Vpp * DAC_BASEVOLTAGE;
   }
   return 0;
 }
@@ -156,13 +155,13 @@ float Dac_getMagnitude(uint8_t targetChannel) {
  */
 bool Dac_setArbWData(uint8_t targetChannel, int16_t dataVals[256]) {
   bool success = false;
-  bool isUsingArb = ((channelAWaveform == 4) || (channelBWaveform == 4)); // At least one is using arbitrary waveform
+  bool isUsingArb = ((waveSynth_0_Waveform == 4) || (waveSynth_1_Waveform == 4)); // At least one is using arbitrary waveform
   if(isUsingArb) Dac_pause();
   if(targetChannel == 0) {
-    ChannelA.arbitraryWaveform(dataVals, 100.0);
+    waveSynth_0.arbitraryWaveform(dataVals, 100.0);
     success = true;
   } else if(targetChannel == 1) {
-    ChannelB.arbitraryWaveform(dataVals, 100.0);
+    waveSynth_1.arbitraryWaveform(dataVals, 100.0);
     success = true;
   }
   if(isUsingArb) Dac_resume();
@@ -181,10 +180,10 @@ bool Dac_setArbWData(uint8_t targetChannel, int16_t dataVals[256]) {
  */
 bool Dac_setWaveform(uint8_t targetChannel, uint8_t desiredWaveform) {
   if(targetChannel == 0) {
-    channelAWaveform = desiredWaveform;
+    waveSynth_0_Waveform = desiredWaveform;
     return true;
   } else if(targetChannel == 1) {
-    channelBWaveform = desiredWaveform;
+    waveSynth_1_Waveform = desiredWaveform;
     return true;
   }
   return false;
@@ -196,9 +195,9 @@ bool Dac_setWaveform(uint8_t targetChannel, uint8_t desiredWaveform) {
  */
 uint8_t Dac_getWaveform(uint8_t targetChannel) {
   if(targetChannel == 0) {
-    return channelAWaveform;
+    return waveSynth_0_Waveform;
   } else if(targetChannel == 1) {
-    return channelBWaveform;
+    return waveSynth_1_Waveform;
   }
   return 0;
 }
@@ -211,8 +210,8 @@ uint8_t Dac_getWaveform(uint8_t targetChannel) {
  * Returns:
  *  The time offset in microseconds.
  */
-uint32_t Dac_getAOffsetMicros() {
-  return micros() - lastACrossover;
+uint32_t Dac_getOffsetMicros_0() {
+  return micros() - lastCrossover_0;
 }
 
 /*
@@ -223,8 +222,8 @@ uint32_t Dac_getAOffsetMicros() {
  * Returns:
  *  The time offset in microseconds.
  */
-uint32_t Dac_getBOffsetMicros() {
-  return micros() - lastBCrossover;
+uint32_t Dac_getOffsetMicros_1() {
+  return micros() - lastCrossover_1;
 }
 
 /*
@@ -232,8 +231,8 @@ uint32_t Dac_getBOffsetMicros() {
  *  Turns off the DAC output.
  */
 void Dac_pause() {
-  ChannelA.amplitude(0);
-  ChannelB.amplitude(0);
+  waveSynth_0.amplitude(0);
+  waveSynth_1.amplitude(0);
 }
 
 
@@ -241,27 +240,26 @@ void Dac_pause() {
  * Description:
  *  Resets the A timer at the end of the last A period.
  */
-void Dac_updateATimer() {
+void Dac_updateCrossoverTimer_0() {
   #ifdef DAC_DEBUG
-  digitalWrite(DAC_DEBUG_PIN_A, debugAToggleOnPeriod);
-  debugAToggleOnPeriod = !debugAToggleOnPeriod;
+  static bool debugToggleOnPeriod_0 = false;
+  digitalWrite(DAC_DEBUG_PIN_0, debugToggleOnPeriod_0);
+  debugToggleOnPeriod_0 = !debugToggleOnPeriod_0;
   #endif
-  // > Tried to call restart() on the channel here earlier but calling continuously
-  //   causes issues, better to call once. No observed timing drift relative to waveform,
-  //   so just get initial offset to be correct.
-  lastACrossover = micros();
+  lastCrossover_0 = micros();
 }
 
 /*
  * Description:
  *  Resets the B timer at the end of the last B period.
  */
-void Dac_updateBTimer() {
+void Dac_updateCrossoverTimer_1() {
   #ifdef DAC_DEBUG
-  digitalWrite(DAC_DEBUG_PIN_B, debugBToggleOnPeriod);
-  debugBToggleOnPeriod = !debugBToggleOnPeriod;
+  static debugToggleOnPeriod_1 = false;
+  digitalWrite(DAC_DEBUG_PIN_1, debugToggleOnPeriod_1);
+  debugToggleOnPeriod_1 = !debugToggleOnPeriod_1;
   #endif
-  lastBCrossover = micros();
+  lastCrossover_1 = micros();
 }
 
 /*
@@ -269,8 +267,8 @@ void Dac_updateBTimer() {
  *  Returns phase so that all waveforms start at lower value
  *  and build up.
  */
-float Dac_getSamplePhase(uint8_t channelAWaveform) {
-  switch(channelAWaveform) { // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
+float Dac_getSamplePhase(uint8_t waveSynth_0_Waveform) {
+  switch(waveSynth_0_Waveform) { // > Waveform types are 0 = Sine, 1 = Sawtooth, 3 = Triangle
     case 0:
       return 270.0;
       break;
@@ -290,48 +288,48 @@ float Dac_getSamplePhase(uint8_t channelAWaveform) {
  *  made since the last call.
  */
 void Dac_resume() {
-  pinMode(DAC_DEBUG_PIN_A, OUTPUT);
-  pinMode(DAC_DEBUG_PIN_B, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_0, OUTPUT);
+  pinMode(DAC_DEBUG_PIN_1, OUTPUT);
   AudioNoInterrupts();
   //digitalWrite(DAC_DEBUG_PIN_R, HIGH);
-  ChannelA.begin(channelAWaveform);
-  ChannelB.begin(channelBWaveform);
-  ChannelA.frequency(channelAFrequency);
-  ChannelB.frequency(channelBFrequency);
-  ChannelA.phase(Dac_getSamplePhase(channelAWaveform));
-  ChannelB.phase(Dac_getSamplePhase(channelBWaveform));
+  waveSynth_0.begin(waveSynth_0_Waveform);
+  waveSynth_1.begin(waveSynth_1_Waveform);
+  waveSynth_0.frequency(waveSynth_0_Frequency);
+  waveSynth_1.frequency(waveSynth_1_Frequency);
+  waveSynth_0.phase(Dac_getSamplePhase(waveSynth_0_Waveform));
+  waveSynth_1.phase(Dac_getSamplePhase(waveSynth_1_Waveform));
   AudioInterrupts();
 
   // Updates first channel
-  digitalWriteFast(DAC_DEBUG_PIN_A, HIGH);
-  ChannelA.amplitude(0);
-  if(channelAMagnitude != 0) {
+  digitalWriteFast(DAC_DEBUG_PIN_0, HIGH);
+  waveSynth_0.amplitude(0);
+  if(waveSynth_0_Vpp != 0) {
     // > Flushes old data
     delay(10);
     // > Restarts and catches first period start
-    ChannelA.amplitude(channelAMagnitude);
-    ChannelA.restart();    // Sets phase back so we can catch first crossover
+    waveSynth_0.amplitude(waveSynth_0_Vpp);
+    waveSynth_0.restart();    // Sets phase back so we can catch first crossover
     Dacs.forceSync0();
   }
   // > Starts timer to track crossovers indirectly
-  lastACrossover = micros();
-  AUpdater.begin(Dac_updateATimer, MICROSFROMFREQ(channelAFrequency));
-  digitalWriteFast(DAC_DEBUG_PIN_A, LOW);
+  lastCrossover_0 = micros();
+  lastCrossover_0_updater.begin(Dac_updateCrossoverTimer_0, MICROSFROMFREQ(waveSynth_0_Frequency));
+  digitalWriteFast(DAC_DEBUG_PIN_0, LOW);
 
   // Updates second channel if necessary
-  digitalWriteFast(DAC_DEBUG_PIN_B, HIGH);
-  ChannelB.amplitude(0);
-  if(channelBMagnitude != 0) {
+  digitalWriteFast(DAC_DEBUG_PIN_1, HIGH);
+  waveSynth_1.amplitude(0);
+  if(waveSynth_1_Vpp != 0) {
     // > Flushes old data
     delay(10);
     // > Restarts and catches first period start
-    ChannelB.amplitude(channelBMagnitude);
-    ChannelB.restart();    // Sets phase back so we can catch first crossover
+    waveSynth_1.amplitude(waveSynth_1_Vpp);
+    waveSynth_1.restart();    // Sets phase back so we can catch first crossover
     Dacs.forceSync1();
   }
   // > Starts timer to track crossovers indirectly
-  lastBCrossover = micros();
-  BUpdater.begin(Dac_updateBTimer, MICROSFROMFREQ(channelBFrequency));
-  digitalWriteFast(DAC_DEBUG_PIN_B, LOW);
+  lastCrossover_1 = micros();
+  lastCrossover_1_updater.begin(Dac_updateCrossoverTimer_1, MICROSFROMFREQ(waveSynth_1_Frequency));
+  digitalWriteFast(DAC_DEBUG_PIN_1, LOW);
   //digitalWrite(DAC_DEBUG_PIN_R, LOW);
 }
