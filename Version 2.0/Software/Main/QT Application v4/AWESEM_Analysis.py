@@ -68,11 +68,11 @@ def preformCalibration():
 #  Creates look up table that simulates the steady state response of the
 #  system to the given 256 sample input at the given frequency.
 #
-def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency):
+def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency, waveformVpp):
     transientTime = 1.0
     extendPeriods = 2.0
     waveformPeriodLength    = 1.0 / waveformFrequency
-    wavetablePadded         = (np.append(wavetableRaw, wavetableRaw[0]) / 32767.0) * (3.3 / 2.0) # Convertes 16 bit signed integer to vpp, also pads with first sample at end to emulate wraparound, note that MCU does the same thing
+    wavetablePadded         = (np.append(wavetableRaw, wavetableRaw[0]) / 32767.0) * (waveformVpp / 2.0) # Convertes 16 bit signed integer to vpp, also pads with first sample at end to emulate wraparound, note that MCU does the same thing
     wavetableTimes          = np.append(np.arange(start = 0, stop = waveformPeriodLength, step = waveformPeriodLength / float(wavetableRaw.shape[0])), waveformPeriodLength + waveformPeriodLength / float(wavetableRaw.shape[0]))
     systemLUTLen = 256 # TODO see LTI reconstruction notes, there has to be a better way
     # Also generally we should convert the continuous model to a discrete model
@@ -96,8 +96,7 @@ def normalizeDisplacement(stableLUT, imageDimension):
     max = np.max(stableLUT)
     totalDisp = max - min
     screenLUT = np.round(((stableLUT - min) / totalDisp) * (imageDimension - 1)).astype(np.uint16) # Note that this is zero indexed
-    scaleFactor = float(totalDisp) / float(imageDimension) # Microns per pixel
-    return screenLUT, scaleFactor
+    return screenLUT, totalDisp
 
 #
 # Description

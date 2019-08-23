@@ -43,18 +43,20 @@
 
 doChangeCPU = False # Set to true to set CPU affinity manually
 
-import atexit
+import scipy
 import ast
 import psutil
 import os
 import glob
-from   collections                   import deque
 import sys
 import numpy
 import datetime
 from   scipy                         import signal
 from   matplotlib                    import cm
+from   matplotlib                    import pyplot as plt
+from   matplotlib.backends.backend_agg import FigureCanvasAgg
 from   qimage2ndarray                import byte_view
+from   qimage2ndarray                import array2qimage
 from   PyQt5.QtCore                  import *
 from   PyQt5.QtGui                   import *
 from   PyQt5.QtWidgets               import *
@@ -118,6 +120,9 @@ class TestBench(QMainWindow):
     __currentXWaveformOpt  = None
     __currentYWaveformOpt  = None
     __currentLUTModeOpt    = None
+    # Tracker for current scale so that files can have these when exported, set to None to disable axis
+    __currentXLength        = None # (microns)
+    __currentYLength        = None # (microns)
 
     def __init__(self, *args, **kwargs):
         super(TestBench, self).__init__(*args, **kwargs)
@@ -129,8 +134,8 @@ class TestBench(QMainWindow):
         self.setUiProperties()
         self.loadDefaultWaveTables()
         self.loadDefaultModels()
-        self.linkUiCallbacks()
         self.setDefaults()
+        self.linkUiCallbacks()
         self.__registerTh.start()
 
     def __del__(self):
@@ -336,7 +341,7 @@ class TestBench(QMainWindow):
     #   folder.
     #
     def saveImage(self):
-        settingsString = "[%s, %s]-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)" % (self.__UiElems.Horizontal_Waveform_Combobox.currentText(), self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value())
+        settingsString = "[%s, %s]-[%0.2f,%0.2f](Hz)-[%0.2f,%0.2f](Vpp)-[%s, %s](Microns)" % (self.__UiElems.Horizontal_Waveform_Combobox.currentText(), self.__UiElems.Vertical_Waveform_Combobox.currentText(), self.__UiElems.Horizontal_Frequency_Spinbox.value(), self.__UiElems.Vertical_Frequency_Spinbox.value(), self.__UiElems.Horizontal_Amplitude_Spinbox.value(), self.__UiElems.Vertical_Amplitude_Spinbox.value(), self.__currentXLength, self.__currentYLength)
         if not self.__ScanImage.save("Captures\Capture_%s_%s.bmp" % (datetime.datetime.now().strftime("%Y-%m-%d[%H-%M-%S]"), settingsString), format = "BMP"):
             print("Failed to Save Image")
 
@@ -428,6 +433,81 @@ class TestBench(QMainWindow):
 
     #
     # Description
+    #   Trims image to smallest bounding box that contains pixels whose alpha
+    #   value is greater than 1 (not fully transparent).
+    #
+    def cropInvisAway(self, image):
+        imageInverseMask = numpy.logical_not(numpy.logical_or(image[:, :, 3] == 0, numpy.sum(image[:, :, :], axis = 2) == 255 * 4)) # Areas where plotting occured have high alpha values, others have an alpha value of zero or are white
+        print(image[1, 1, :])
+        imageHorizontalSums = numpy.sum(imageInverseMask, axis = 0)
+        nonZeroHoriz = numpy.nonzero(imageHorizontalSums)[0]
+        firstHoriz   = nonZeroHoriz[0]
+        lastHoriz    = nonZeroHoriz[-1]
+        imageVerticalSums = numpy.sum(imageInverseMask, axis = 1)
+        nonZeroVert  = numpy.nonzero(imageVerticalSums)[0]
+        firstVert    = nonZeroVert[0]
+        lastVert     = nonZeroVert[-1]
+        croppedImage = image[(firstVert):(lastVert + 2), (firstHoriz):(lastHoriz + 2), :]
+        return croppedImage
+
+    #
+    # Description
+    #   Adds scale labels to edges of the image in microns. If None is passed
+    #   for xMaxMicrons or yMaxMicrons than the corresponding axis is set to
+    #   appear blank.
+    #
+    def __updateXAxisLabel(self, xMaxMicrons):
+        xAxisImage = numpy.zeros((10, 10, 4)) # Does not really matter, just has to be x, x, 4 b/c it will be scaled
+        if xMaxMicrons is not None and xMaxMicrons > 0.0:
+            fig, ax = plt.subplots(dpi = 300)
+            ax.set_aspect(0.1)
+            ax.set_yticks([])
+            ax.tick_params(
+                axis='y',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off
+            ax.set_xlim(0, xMaxMicrons)
+            xTick_objects = ax.xaxis.get_major_ticks()
+            xTick_objects[0].label1.set_horizontalalignment('left')   # left align first tick
+            xTick_objects[-1].label1.set_horizontalalignment('right') # right align last tick
+            plt.xlabel("Microns")
+            # > Gets canvas buffer
+            canvas = FigureCanvasAgg(fig);
+            canvas.draw();
+            s, (width, height) = canvas.print_to_buffer()
+            xAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4))) 
+        
+        self.__UiElems.Horizontal_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(xAxisImage).scaled(self.__UiElems.Horizontal_Scale_Label.width(), self.__UiElems.Horizontal_Scale_Label.height())))
+        
+    def __updateYAxisLabel(self, yMaxMicrons):
+        yAxisImage = numpy.zeros((10, 10, 4)) # As Alpha is zero will appear blank
+        if yMaxMicrons is not None and yMaxMicrons > 0.0:
+            fig, ax = plt.subplots(dpi = 300)
+            ax.set_aspect(1000)
+            ax.set_xticks([])
+            ax.tick_params(
+                axis='x',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off
+            ax.set_ylim(0, yMaxMicrons)
+            yTick_objects = ax.yaxis.get_major_ticks()
+            yTick_objects[0].label1.set_verticalalignment('bottom')   # left align first tick
+            yTick_objects[-1].label1.set_verticalalignment('top') # right align last tick
+            plt.ylabel("Microns")
+            # > Gets canvas buffer
+            canvas = FigureCanvasAgg(fig);
+            canvas.draw();
+            s, (width, height) = canvas.print_to_buffer()
+            yAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4)))
+        
+        self.__UiElems.Vertical_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(yAxisImage).scaled(self.__UiElems.Vertical_Scale_Label.width(), self.__UiElems.Vertical_Scale_Label.height())))
+
+    #
+    # Description
     #   Returns an executable callback that filters timestamps based on whether
     #   they correspond to times in the displacement LUT where the stage is rising
     #   (after the lowest displacement point and before the highest point)
@@ -466,12 +546,14 @@ class TestBench(QMainWindow):
         yPhase          = self.__UiElems.Sampling_Phase_Vertical_Spinbox.value()
         xFrequency      = self.__UiElems.Horizontal_Frequency_Spinbox.value() # Spinbox is hz
         yFrequency      = self.__UiElems.Vertical_Frequency_Spinbox.value()   # Spinbox is hz
+        xVpp            = self.__UiElems.Horizontal_Amplitude_Spinbox.value()
+        yVpp            = self.__UiElems.Vertical_Amplitude_Spinbox.value()
         currentLUTMode  = self.__UiElems.Sampling_LUT_Combobox.currentText()
         # What will be determined
         xFunction       = None
         yFunction       = None
-        xScaleFactor    = None # Units of (microns / pixel)
-        yScaleFactor    = None
+        xTotalLength    = None # Width of image in microns
+        yTotalLength    = None # Height of image in microns
         xFilterFunction = None
         yFilterFunction = None
         xTimeOffset     = 0.0
@@ -496,15 +578,15 @@ class TestBench(QMainWindow):
             xPeriod     = 1.0 / xFrequency
             xWaveText   = self.__UiElems.Horizontal_Waveform_Combobox.currentText()
             xWaveTable  = self.__WaveTables[xWaveText]
-            xStableTimes, xStableLUT = Analysis.findSteadyStateResp(systemModel, xWaveTable, xFrequency)
-            xScreenLUT, xScaleFactor = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
+            xStableTimes, xStableLUT = Analysis.findSteadyStateResp(systemModel, xWaveTable, xFrequency, xVpp)
+            xScreenLUT, xTotalLength = Analysis.normalizeDisplacement(xStableLUT, Const.RES_W)
             xFunction     = lambda times: numpy.interp(x = times, xp = xStableTimes, fp = xScreenLUT, period = xPeriod)
             # Y Axis
             yPeriod     = 1.0 / yFrequency
             yWaveText   = self.__UiElems.Vertical_Waveform_Combobox.currentText()
             yWaveTable  = self.__WaveTables[yWaveText]
-            yStableTimes, yStableLUT = Analysis.findSteadyStateResp(systemModel, yWaveTable, yFrequency)
-            yScreenLUT, yScaleFactor = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
+            yStableTimes, yStableLUT = Analysis.findSteadyStateResp(systemModel, yWaveTable, yFrequency, yVpp)
+            yScreenLUT, yTotalLength = Analysis.normalizeDisplacement(yStableLUT, Const.RES_H)
             yFunction     = lambda times: numpy.interp(x = times, xp = yStableTimes, fp = yScreenLUT, period = yPeriod)
 
             # Sets filter
@@ -564,6 +646,14 @@ class TestBench(QMainWindow):
         # Sets time offset
         self.__registerTh.setDataOffsetX(xTimeOffset)
         self.__registerTh.setDataOffsetY(yTimeOffset)
+        # Sets axis labels
+        if self.__currentXLength != xTotalLength:
+            self.__updateXAxisLabel(xTotalLength)
+            self.__currentXLength = xTotalLength
+            
+        if self.__currentYLength != yTotalLength:
+            self.__updateYAxisLabel(yTotalLength)
+            self.__currentYLength = yTotalLength
 
     #
     # Description:
