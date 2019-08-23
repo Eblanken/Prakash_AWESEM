@@ -246,7 +246,7 @@ class TestBench(QMainWindow):
 
         # Sampling
         self.__UiElems.Sampling_Frequency_Spinbox.valueChanged.connect(self.updateSamplingFrequency)
-        # self.__UiElems.Sampling_Averages_Spinbox.valueChanged.connect(self.setSamplingAverages) # TODO MCU only handles specific averaging quantites, need to create list in GUI
+        # self.__UiElems.Sampling_Averages_Spinbox.valueChanged.connect(self.setSamplingAverages)
         self.__UiElems.Sampling_Phase_Vertical_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
         self.__UiElems.Sampling_Phase_Horizontal_Spinbox.valueChanged.connect(self.updateSamplingReconstruction)
         self.__UiElems.Sampling_LUT_Combobox.currentIndexChanged.connect(self.updateSamplingReconstruction)
@@ -410,7 +410,7 @@ class TestBench(QMainWindow):
         if horizontalLabel in self.__WaveTables: # Is an existing waveform
             self.__MCUInterface.setDacMagnitude(0, self.__UiElems.Horizontal_Amplitude_Spinbox.value())
             self.__MCUInterface.setDacFrequency(0, self.__UiElems.Horizontal_Frequency_Spinbox.value())
-            self.__MCUInterface.setCustomWaveformData(0, self.__WaveTables[verticalLabel])
+            self.__MCUInterface.setCustomWaveformData(0, self.__WaveTables[horizontalLabel])
             self.__MCUInterface.setDacWaveform(0, 4)
             self.__currentXWaveformOpt = self.__UiElems.Horizontal_Waveform_Combobox.currentIndex()
         elif horizontalLabel == "Load Custom": # Loads new waveform
@@ -479,7 +479,7 @@ class TestBench(QMainWindow):
             s, (width, height) = canvas.print_to_buffer()
             xAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4))) 
         
-        self.__UiElems.Horizontal_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(xAxisImage).scaled(self.__UiElems.Horizontal_Scale_Label.width(), self.__UiElems.Horizontal_Scale_Label.height())))
+        self.__UiElems.Horizontal_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(xAxisImage.copy()).scaled(self.__UiElems.Horizontal_Scale_Label.width(), self.__UiElems.Horizontal_Scale_Label.height())))
         
     def __updateYAxisLabel(self, yMaxMicrons):
         yAxisImage = numpy.zeros((10, 10, 4)) # As Alpha is zero will appear blank
@@ -504,7 +504,7 @@ class TestBench(QMainWindow):
             s, (width, height) = canvas.print_to_buffer()
             yAxisImage = self.cropInvisAway(numpy.frombuffer(s, numpy.uint8).reshape((height, width, 4)))
         
-        self.__UiElems.Vertical_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(yAxisImage).scaled(self.__UiElems.Vertical_Scale_Label.width(), self.__UiElems.Vertical_Scale_Label.height())))
+        self.__UiElems.Vertical_Scale_Label.setPixmap(QPixmap.fromImage(array2qimage(yAxisImage.copy()).scaled(self.__UiElems.Vertical_Scale_Label.width(), self.__UiElems.Vertical_Scale_Label.height())))
 
     #
     # Description
@@ -521,7 +521,7 @@ class TestBench(QMainWindow):
         troughTime  = stableTimes[numpy.argmin(stableLUT)]
         if filteringText == "Rising":
             def filterFunction(inputTime):
-                inputTime = numpy.fmod(inputTime, period) # TODO mod makes me sad
+                inputTime = numpy.fmod(inputTime, period)
                 if troughTime < crestTime: # rising during midpoint
                     return numpy.logical_and(troughTime < inputTime, inputTime < crestTime)
                 # falling during midpoint
