@@ -255,7 +255,7 @@ void Dac_updateCrossoverTimer_0() {
  */
 void Dac_updateCrossoverTimer_1() {
   #ifdef DAC_DEBUG
-  static debugToggleOnPeriod_1 = false;
+  static bool debugToggleOnPeriod_1 = false;
   digitalWrite(DAC_DEBUG_PIN_1, debugToggleOnPeriod_1);
   debugToggleOnPeriod_1 = !debugToggleOnPeriod_1;
   #endif
