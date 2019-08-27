@@ -15,18 +15,18 @@ This program is intended for the Teensy 3.6 board from PJRC. Make sure that you 
 
 These are all of the commands that can be used with the MCU frontend. Note that all commands that set waveform and data acquisition parameters must be executed while the device is not running (after startup or after calling 'H' (halt)).
 
-All command strings are in the format:
+All command strings are of the format:
 
- $\{\text{byte}_1, \text{byte}_2, [\text{byte}_3...\text{byte}_n (\text{datatype}_1)], [\text{byte}_{n+1} ...\text{byte}_m (\text{datatype}_2 )]\}$
+<a href="https://www.codecogs.com/eqnedit.php?latex=$\{\text{byte}_1,&space;\text{byte}_2,&space;[\text{byte}_3...\text{byte}_n&space;(\text{datatype}_1)],&space;[\text{byte}_{n&plus;1}&space;...\text{byte}_m&space;(\text{datatype}_2&space;)]\}$" target="_blank"><img src="https://latex.codecogs.com/gif.latex?$\{\text{byte}_1,&space;\text{byte}_2,&space;[\text{byte}_3...\text{byte}_n&space;(\text{datatype}_1)],&space;[\text{byte}_{n&plus;1}&space;...\text{byte}_m&space;(\text{datatype}_2&space;)]\}$" title="$\{\text{byte}_1, \text{byte}_2, [\text{byte}_3...\text{byte}_n (\text{datatype}_1)], [\text{byte}_{n+1} ...\text{byte}_m (\text{datatype}_2 )]\}$" /></a>
 
 >
 > Ping
-> : Call: $\{\text{'p'}\}$
-> : Response:$\{\text{'A'}\}$
+> : Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'p'}\}$" title="$\{\text{'p'}\}$" />
+> : Response: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" />
 
 > Get frequency
-> : Call: $\{\text{'f'}, [\text{axis (uint8\_t)}]\}$
-> : Response: If valid $\{\text{'A'}\}$ then $\{[\text{Frequency Hz (float)}]\}$, otherwise $\{\text{'F'}\}$
+> : Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'f'},&space;[\text{axis&space;(uint8\_t)}]\}$" title="$\{\text{'f'}, [\text{axis (uint8\_t)}]\}$" />
+> : Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> then <img src="https://latex.codecogs.com/gif.latex?$\{[\text{Frequency&space;Hz&space;(float)}]\}$" title="$\{[\text{Frequency Hz (float)}]\}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
 > Set Frequency
 > : Call: $\{\text{'F'}, [text{channel either 0 or 1 (uint8\_t)}], [frequency (float)]\}$
