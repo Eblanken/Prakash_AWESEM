@@ -1,0 +1,81 @@
+# AWESEM Waveform Generation and Data Acquisition Front-End
+
+--------------
+
+## Description
+
+This firmware acts as an analog front-end for the AWESEM program. The MCU both serves to generate the driving waveform for the sample stage with the on-board DAC and samples intensity data.
+
+-----------
+## Installation
+This program is intended for the Teensy 3.6 board from PJRC. Make sure that you have Teensyduino installed. Open and compile the file "PiPion.ino" with the Arduino IDE.
+
+------------
+## Serial Commands
+
+These are all of the commands that can be used with the MCU frontend. Note that all commands that set waveform and data acquisition parameters must be executed while the device is not running (after startup or after calling 'H' (halt)).
+
+All command strings are in the format:
+
+ $\{\text{byte}_1, \text{byte}_2, [\text{byte}_3...\text{byte}_n (\text{datatype}_1)], [\text{byte}_{n+1} ...\text{byte}_m (\text{datatype}_2 )]\}$
+
+>
+> Ping
+> : Call: $\{\text{'p'}\}$
+> : Response:$\{\text{'A'}\}$
+
+> Get frequency
+> : Call: $\{\text{'f'}, [\text{axis (uint8\_t)}]\}$
+> : Response: If valid $\{\text{'A'}\}$ then $\{[\text{Frequency Hz (float)}]\}$, otherwise $\{\text{'F'}\}$
+
+> Set Frequency
+> : Call: $\{\text{'F'}, [text{channel either 0 or 1 (uint8\_t)}], [frequency (float)]\}$
+> : Response: If valid 'A' otherwise 'F'
+
+> Get VPP Range
+> : Call: $\{\text{'m'}, [\text{axis (uint8\_t)}]\}$
+> : Response: If valid $\{'A'\}$ then $\{[\text{VPP in volts (float)\}]\}}$, otherwise $\{'F'\}$.
+
+> Set VPP Range
+> : Call: $\{\text{'M'}, [\text{axis (uint8\_t)}], [\text{magnitude (float)}]\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Get Sample Frequency
+> : Call: $\{\text{'s'}\}$
+> : Response: If valid $\{\text{'A'}\}$ than $\{[\text{Sampling Frequency Hz (float)}]\}$, otherwise $\{\text{'F'}\}$
+
+> Set Sample Frequency
+> : Call: $\{\text{'S'}, [\text{frequency (float)}]\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Get Sample Averages
+> : Call: $\text{\{'u'\}}$
+> : Response: If valid $\{\text{'A'}\}$ than $\{[\text{samples averages (uint8\_t)}]\}$, otherwise $\{\text{'F'}\}$
+
+> Set Sample Averages
+> : Call: $\{\text{'U'}, [\text{averages (uint8\_t)}]\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Get Current Waveform
+> : Call: {'w', [channel 0 or 1 (uint8_t)]}
+> : Response: If valid $\{\text{'A'}\}$ than $\{[\text{0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8\_t)}]\}$, otherwise $\{\text{'F'}\}$
+
+> Set Current Waveform
+> : Call: $\{\text{'W'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{waveform (0 sine, 1 saw, 3 tria, 4 arbitrary) (uint8\_t)}]\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Set Arbitrary Waveform Data
+> : Call: $\{\text{'D'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{samples (int16\_t[256])}]\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Request Buffer
+> : Call: $\{\text{'A'}\}$
+> : Response: If ready $\{\text{'A'}\}$ then $\{[\text{scan ID since start (uint8\_t)}], [\text{scan period uS (uint16\_t)}], [\text{time since last waveform rollover of 0 in uS (uint16\_t)}], [\text{rollover of 1 in uS (uint16\_t)}], [\text{data payload (uint8\_t[BUFFER\_SIZE])}]\}$
+
+> Begin
+> : Call: $\{\text{'B'}\}$
+> : Response: If start is successful $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+
+> Halt
+> : Call: $\{\text{'H'}\}$
+> : Response: If pause is successful $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$

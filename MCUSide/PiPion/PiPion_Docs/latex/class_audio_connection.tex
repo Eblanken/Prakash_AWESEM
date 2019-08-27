@@ -1,0 +1,50 @@
+\hypertarget{class_audio_connection}{}\doxysection{Audio\+Connection Class Reference}
+\label{class_audio_connection}\index{AudioConnection@{AudioConnection}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_audio_connection_acd0b2d0346d1add1f3a70eb29486ecf1}\label{class_audio_connection_acd0b2d0346d1add1f3a70eb29486ecf1}} 
+{\bfseries Audio\+Connection} (\mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \&source, \mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \&destination)
+\item 
+\mbox{\Hypertarget{class_audio_connection_a1a850891018555ec4a7ec73ee2ef7597}\label{class_audio_connection_a1a850891018555ec4a7ec73ee2ef7597}} 
+{\bfseries Audio\+Connection} (\mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \&source, unsigned char source\+Output, \mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \&destination, unsigned char destination\+Input)
+\item 
+\mbox{\Hypertarget{class_audio_connection_a825cfb6f097655f031b02e4d859291c6}\label{class_audio_connection_a825cfb6f097655f031b02e4d859291c6}} 
+void {\bfseries disconnect} (void)
+\item 
+\mbox{\Hypertarget{class_audio_connection_a00d0d51111ff27b6d2b5ce82e60c9e30}\label{class_audio_connection_a00d0d51111ff27b6d2b5ce82e60c9e30}} 
+void {\bfseries connect} (void)
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a69bd9c7a572d8d68f7e25e427a034662}\label{class_audio_connection_a69bd9c7a572d8d68f7e25e427a034662}} 
+\mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \& {\bfseries src}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a8d89324340ff5890c172257957d3a3a5}\label{class_audio_connection_a8d89324340ff5890c172257957d3a3a5}} 
+\mbox{\hyperlink{class_audio_stream}{Audio\+Stream}} \& {\bfseries dst}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a4fd2cd26e00e0292f739812a051ba00d}\label{class_audio_connection_a4fd2cd26e00e0292f739812a051ba00d}} 
+unsigned char {\bfseries src\+\_\+index}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a4edba6a0f38cff66895ac3aa87e559d3}\label{class_audio_connection_a4edba6a0f38cff66895ac3aa87e559d3}} 
+unsigned char {\bfseries dest\+\_\+index}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a86103ac904d649232382774eae387a84}\label{class_audio_connection_a86103ac904d649232382774eae387a84}} 
+\mbox{\hyperlink{class_audio_connection}{Audio\+Connection}} $\ast$ {\bfseries next\+\_\+dest}
+\item 
+\mbox{\Hypertarget{class_audio_connection_a186c54e51c05073dfa23b15af114f955}\label{class_audio_connection_a186c54e51c05073dfa23b15af114f955}} 
+bool {\bfseries is\+Connected}
+\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_audio_connection_ac4a5eaa8965a8497bcd8eb0384abb928}\label{class_audio_connection_ac4a5eaa8965a8497bcd8eb0384abb928}} 
+class {\bfseries Audio\+Stream}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+Pi\+Pion\+\_\+\+Code/Stroffgen\+\_\+\+Audio\+Stream.\+h\item 
+Pi\+Pion\+\_\+\+Code/Stroffgen\+\_\+\+Audio\+Stream.\+cpp\end{DoxyCompactItemize}
