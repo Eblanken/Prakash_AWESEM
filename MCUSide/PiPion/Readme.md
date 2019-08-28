@@ -62,20 +62,20 @@ All command strings are of the format:
 
 > Set Current Waveform
 > : Call: $\{\text{'W'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{waveform (0 sine, 1 saw, 3 tria, 4 arbitrary) (uint8\_t)}]\}$
-> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+> : Response: If valid $\{\text{'A'}\}$ otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
-> Set Arbitrary Waveform Data
-> : Call: $\{\text{'D'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{samples (int16\_t[256])}]\}$
-> : Response: If valid $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+> __Set Arbitrary Waveform Data__ <br>
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'D'},&space;[\text{axis&space;0&space;or&space;1&space;(uint8\_t)}],&space;[\text{samples&space;(int16\_t[256])}]\}$" title="$\{\text{'D'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{samples (int16\_t[256])}]\}$" /> <br>
+> Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
-> Request Buffer
-> : Call: $\{\text{'A'}\}$
-> : Response: If ready $\{\text{'A'}\}$ then $\{[\text{scan ID since start (uint8\_t)}], [\text{scan period uS (uint16\_t)}], [\text{time since last waveform rollover of 0 in uS (uint16\_t)}], [\text{rollover of 1 in uS (uint16\_t)}], [\text{data payload (uint8\_t[BUFFER\_SIZE])}]\}$
+> __Request Buffer__ <br>
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> <br>
+> Response: If ready <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> then <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{[\text{scan&space;ID&space;since&space;start&space;(uint8\_t)}],&space;[\text{scan&space;period&space;uS&space;(uint16\_t)}],&space;[\text{time&space;since&space;last&space;waveform&space;rollover&space;of&space;0&space;in&space;uS&space;(uint16\_t)}],&space;[\text{rollover&space;of&space;1&space;in&space;uS&space;(uint16\_t)}],&space;[\text{data&space;payload&space;(uint8\_t[BUFFER\_SIZE])}]\}$" title="$\{[\text{scan ID since start (uint8\_t)}], [\text{scan period uS (uint16\_t)}], [\text{time since last waveform rollover of 0 in uS (uint16\_t)}], [\text{rollover of 1 in uS (uint16\_t)}], [\text{data payload (uint8\_t[BUFFER\_SIZE])}]\}$" />
 
-> Begin
-> : Call: $\{\text{'B'}\}$
-> : Response: If start is successful $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+> __Begin__ <br>
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'B'}\}$" title="$\{\text{'B'}\}$" /> <br>
+> Response: If start is successful <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
-> Halt
-> : Call: $\{\text{'H'}\}$
-> : Response: If pause is successful $\{\text{'A'}\}$ otherwise $\{\text{'F'}\}$
+> __Halt__ <br>
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'H'}\}$" title="$\{\text{'H'}\}$" /> <br>
+> Response: If pause is successful <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
