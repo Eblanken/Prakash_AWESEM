@@ -60,7 +60,7 @@ def resampleVerticalDistortion(distortedImage, phaseToTrough):
     #targetColumnsFalling = numpy.zeros((targetImage.shape[1])) - 1
     #targetColumnsRising = numpy.zeros((targetImage.shape[1]))  - 1
     for currentColumn in range(distortedImage.shape[1]):
-        baseOffset = numpy.arccos(((currentColumn * 2.0) / distortedImage.shape[1]) - 1) * (distortedImage.shape[1]) / (2.0 * numpy.pi)
+        baseOffset = numpy.arcsin(((currentColumn * 2.0) / distortedImage.shape[1]) - 1) * (distortedImage.shape[1]) / (2.0 * numpy.pi)
         targetColumnFalling = (offsetToCrest + baseOffset) % distortedImage.shape[1]
         targetColumnRising  = ((offsetToCrest - baseOffset) + distortedImage.shape[1]) % distortedImage.shape[1]
         rebuiltImageFalling[:, currentColumn] = (imageInterpolator(targetColumnFalling, range(distortedImage.shape[0]))).flatten()

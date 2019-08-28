@@ -1,0 +1,67 @@
+\hypertarget{index_autotoc_md1}{}\doxysection{Description}\label{index_autotoc_md1}
+This firmware acts as an analog front-\/end for the A\+W\+E\+S\+EM program. The M\+CU both serves to generate the driving waveform for the sample stage with the on-\/board D\+AC and samples intensity data.\hypertarget{index_autotoc_md2}{}\doxysection{Installation}\label{index_autotoc_md2}
+This program is intended for the Teensy 3.\+6 board from P\+J\+RC. Make sure that you have Teensyduino installed. Open and compile the file \char`\"{}\+Pi\+Pion.\+ino\char`\"{} with the Arduino I\+DE.\hypertarget{index_autotoc_md3}{}\doxysection{Serial Commands}\label{index_autotoc_md3}
+These are all of the commands that can be used with the M\+CU frontend. Note that all commands that set waveform and data acquisition parameters must be executed while the device is not running (after startup or after calling \textquotesingle{}H\textquotesingle{} (halt)).
+
+All command strings are of the format\+:
+
+\href{https://www.codecogs.com/eqnedit.php?latex=$\{\text{byte}_1,&space;\text{byte}_2,&space;[\text{byte}_3...\text{byte}_n&space;(\text{datatype}_1)],&space;[\text{byte}_{n&plus;1}&space;...\text{byte}_m&space;(\text{datatype}_2&space;)]\}$}{\texttt{ }}\hypertarget{index_autotoc_md4}{}\doxysubsubsection{Ping}\label{index_autotoc_md4}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+:  \end{quote}
+\hypertarget{index_autotoc_md5}{}\doxysubsubsection{Get frequency}\label{index_autotoc_md5}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  then , otherwise  \end{quote}
+\hypertarget{index_autotoc_md6}{}\doxysubsubsection{Set Frequency}\label{index_autotoc_md6}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md7}{}\doxysubsubsection{Get V\+P\+P Range}\label{index_autotoc_md7}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  then , otherwise . \end{quote}
+\hypertarget{index_autotoc_md8}{}\doxysubsubsection{Set V\+P\+P Range}\label{index_autotoc_md8}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md9}{}\doxysubsubsection{Get Sample Frequency}\label{index_autotoc_md9}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  than , otherwise . \end{quote}
+\hypertarget{index_autotoc_md10}{}\doxysubsubsection{Set Sample Frequency}\label{index_autotoc_md10}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md11}{}\doxysubsubsection{Get Sample Averages}\label{index_autotoc_md11}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  than , otherwise  \end{quote}
+\hypertarget{index_autotoc_md12}{}\doxysubsubsection{Set Sample Averages}\label{index_autotoc_md12}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md13}{}\doxysubsubsection{Get Current Waveform}\label{index_autotoc_md13}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  than , otherwise  \end{quote}
+\hypertarget{index_autotoc_md14}{}\doxysubsubsection{Set Current Waveform}\label{index_autotoc_md14}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md15}{}\doxysubsubsection{Set Arbitrary Waveform Data}\label{index_autotoc_md15}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If valid  otherwise  \end{quote}
+\hypertarget{index_autotoc_md16}{}\doxysubsubsection{Request Buffer}\label{index_autotoc_md16}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If ready  then  \end{quote}
+\hypertarget{index_autotoc_md17}{}\doxysubsubsection{Begin}\label{index_autotoc_md17}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If start is successful  otherwise  \end{quote}
+\hypertarget{index_autotoc_md18}{}\doxysubsubsection{Halt}\label{index_autotoc_md18}
+\begin{quote}
+Call\+:  ~\newline
+ Response\+: If pause is successful  otherwise  \end{quote}
