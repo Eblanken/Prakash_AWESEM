@@ -48,20 +48,20 @@ All command strings are of the format:
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
 > __Get Sample Averages__ <br>
-> : Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\text{\{'u'\}}$" title="$\text{\{'u'\}}$" /> <br>
-> : Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> than <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{[\text{samples&space;averages&space;(uint8\_t)}]\}$" title="$\{[\text{samples averages (uint8\_t)}]\}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\text{\{'u'\}}$" title="$\text{\{'u'\}}$" /> <br>
+> Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> than <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{[\text{samples&space;averages&space;(uint8\_t)}]\}$" title="$\{[\text{samples averages (uint8\_t)}]\}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
 > __Set Sample Averages__ <br>
 > : Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'U'},&space;[\text{averages&space;(uint8\_t)}]\}$" title="$\{\text{'U'}, [\text{averages (uint8\_t)}]\}$" /> <br>
 > : Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
 > __Get Current Waveform__ <br>
-> : Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;{'w',&space;[channel&space;0&space;or&space;1&space;(uint8_t)]}" title="{'w', [channel 0 or 1 (uint8_t)]}" /> <br>
-> : Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> than <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{[\text{0&space;=&space;Sine,&space;1&space;=&space;Sawtooth,&space;3&space;=&space;Triangle&space;(uint8\_t)}]\}$" title="$\{[\text{0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8\_t)}]\}$" />, otherwise $\{\text{'F'}\}$
+> Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{'w',&space;[channel&space;0&space;or&space;1&space;(uint8\_t)]\}$" title="$\{'w', [channel 0 or 1 (uint8\_t)]\}$" /> <br>
+> Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> than <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{[\text{0&space;=&space;Sine,&space;1&space;=&space;Sawtooth,&space;3&space;=&space;Triangle&space;(uint8\_t)}]\}$" title="$\{[\text{0 = Sine, 1 = Sawtooth, 3 = Triangle (uint8\_t)}]\}$" />, otherwise $\{\text{'F'}\}$
 
 > __Set Current Waveform__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'W'},&space;[\text{axis&space;0&space;or&space;1&space;(uint8\_t)}],&space;[\text{waveform&space;(0&space;sine,&space;1&space;saw,&space;3&space;tria,&space;4&space;arbitrary)&space;(uint8\_t)}]\}$" title="$\{\text{'W'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{waveform (0 sine, 1 saw, 3 tria, 4 arbitrary) (uint8\_t)}]\}$" /> <br>
-> : Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
+> Response: If valid <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
 > __Set Arbitrary Waveform Data__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?\inline&space;$\{\text{'D'},&space;[\text{axis&space;0&space;or&space;1&space;(uint8\_t)}],&space;[\text{samples&space;(int16\_t[256])}]\}$" title="$\{\text{'D'}, [\text{axis 0 or 1 (uint8\_t)}], [\text{samples (int16\_t[256])}]\}$" /> <br>
