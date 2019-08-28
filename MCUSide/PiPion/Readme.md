@@ -19,29 +19,28 @@ All command strings are of the format:
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=$\{\text{byte}_1,&space;\text{byte}_2,&space;[\text{byte}_3...\text{byte}_n&space;(\text{datatype}_1)],&space;[\text{byte}_{n&plus;1}&space;...\text{byte}_m&space;(\text{datatype}_2&space;)]\}$" target="_blank"><img src="https://latex.codecogs.com/gif.latex?$\{\text{byte}_1,&space;\text{byte}_2,&space;[\text{byte}_3...\text{byte}_n&space;(\text{datatype}_1)],&space;[\text{byte}_{n&plus;1}&space;...\text{byte}_m&space;(\text{datatype}_2&space;)]\}$" title="$\{\text{byte}_1, \text{byte}_2, [\text{byte}_3...\text{byte}_n (\text{datatype}_1)], [\text{byte}_{n+1} ...\text{byte}_m (\text{datatype}_2 )]\}$" /></a>
 
->
-> __Ping__
+> __Ping__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'p'}\}$" title="$\{\text{'p'}\}$" /> <br>
 > Response: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" />
 
-> __Get frequency__
+> __Get frequency__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'f'},&space;[\text{axis&space;(uint8\_t)}]\}$" title="$\{\text{'f'}, [\text{axis (uint8\_t)}]\}$" /> <br>
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> then <img src="https://latex.codecogs.com/gif.latex?$\{[\text{Frequency&space;Hz&space;(float)}]\}$" title="$\{[\text{Frequency Hz (float)}]\}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
-> __Set Frequency__
+> __Set Frequency__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'F'},&space;[text{channel&space;either&space;0&space;or&space;1&space;(uint8\_t)}],&space;[frequency&space;(float)]\}$" title="$\{\text{'F'}, [text{channel either 0 or 1 (uint8\_t)}], [frequency (float)]\}$" /> <br>
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{'A'\}$" title="$\{'A'\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?$\{'F'\}$" title="$\{'F'\}$" />
 
-> __Get VPP Range__
+> __Get VPP Range__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'m'},&space;[\text{axis&space;(uint8\_t)}]\}$" title="$\{\text{'m'}, [\text{axis (uint8\_t)}]\}$" /> <br>
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{'A'\}$" title="$\{'A'\}$" /> then <img src="https://latex.codecogs.com/gif.latex?$\{[\text{VPP&space;in&space;volts&space;(float)\}]\}}$" title="$\{[\text{VPP in volts (float)\}]\}}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?$\{'F'\}$" title="$\{'F'\}$" />.
 
-> __Set VPP Range__
+> __Set VPP Range__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'M'},&space;[\text{axis&space;(uint8\_t)}],&space;[\text{magnitude&space;(float)}]\}$" title="$\{\text{'M'}, [\text{axis (uint8\_t)}], [\text{magnitude (float)}]\}$" />
 <br>
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> otherwise <img src="https://latex.codecogs.com/gif.latex?$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />
 
-> Get Sample Frequency
+> __Get Sample Frequency__ <br>
 > Call: <img src="https://latex.codecogs.com/gif.latex?$\{\text{'s'}\}$" title="$\{\text{'s'}\}$" /> <br>
 > Response: If valid <img src="https://latex.codecogs.com/gif.latex?$\{\text{'A'}\}$" title="$\{\text{'A'}\}$" /> than <img src="https://latex.codecogs.com/gif.latex?$\{[\text{Sampling&space;Frequency&space;Hz&space;(float)}]\}$" title="$\{[\text{Sampling Frequency Hz (float)}]\}$" />, otherwise <img src="https://latex.codecogs.com/gif.latex?$\{\text{'F'}\}$" title="$\{\text{'F'}\}$" />.
 
