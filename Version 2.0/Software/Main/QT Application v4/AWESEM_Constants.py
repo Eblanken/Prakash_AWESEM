@@ -21,8 +21,8 @@ pi = 3.1415926535
 mill = 1000000
 
 # Size of scan area
-RES_W = 250
-RES_H = 250
+RES_W = 500
+RES_H = 500
 PATH_BACKGROUNDIMAGE = "ProgramFiles/grid.png"
 
 # Defaults

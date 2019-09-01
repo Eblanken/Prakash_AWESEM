@@ -104,7 +104,7 @@ class TestBench(QMainWindow):
     __MCUInterface      = None
     __registerTh        = None
     __consoleOut        = None
-    __ScanImage         = QImage(Const.PATH_BACKGROUNDIMAGE)
+    __ScanImage         = QImage(Const.PATH_BACKGROUNDIMAGE).scaled(Const.RES_W, Const.RES_H)
     __ColorMap          = cm.get_cmap('viridis')
     __UiElems           = None
     __WaveTables        = None # Dictionary of {"Name": tableArray}
@@ -345,7 +345,7 @@ class TestBench(QMainWindow):
     #   Clears image currently on monitor.
     #
     def clearScreen(self):
-        self.__ScanImage = QImage(Const.PATH_BACKGROUNDIMAGE)
+        self.__ScanImage = QImage(Const.PATH_BACKGROUNDIMAGE).scaled(Const.RES_W, Const.RES_H)
         self.__UiElems.Plotter_Label.setPixmap(QPixmap.fromImage(self.__ScanImage).scaled(self.__UiElems.Plotter_Label.width(), self.__UiElems.Plotter_Label.height()))
 
     #
@@ -592,8 +592,8 @@ class TestBench(QMainWindow):
 
         # Lays out data into modern art image for testing and calibration
         elif(currentLUTMode == "Linear"):
-            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, Const.RES_W * 0.5, xFrequency, 0.0)
-            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, Const.RES_H * 0.5, yFrequency, 0.0)
+            xFunction = lambda inputTime : Analysis.sawTooth(inputTime, (Const.RES_W * 0.5) - 1, xFrequency, 0.0)
+            yFunction = lambda inputTime : Analysis.sawTooth(inputTime, (Const.RES_H * 0.5) - 1, yFrequency, 0.0)
 
         # Assumes that system plant is 1 (no distortion) and allows for manual phase adjustment
         elif currentLUTMode == "Axis Waveform":
