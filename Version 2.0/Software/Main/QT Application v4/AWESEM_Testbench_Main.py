@@ -131,6 +131,8 @@ class TestBench(QMainWindow):
         self.setDefaults()
         self.linkUiCallbacks()
         self.__registerTh.start()
+        self.updateWaveforms()
+        self.updateSamplingReconstruction()
 
     def __del__(self):
         self.shutdownResources()
@@ -138,6 +140,8 @@ class TestBench(QMainWindow):
     def shutdownResources(self):
         print("Closing Resources")
         self.__MCUInterface.close()
+
+
         self.__registerTh.close()
         print("Resources Closed")
         sys.stdout = sys.__stdout__ # Sets print mode back to normal
@@ -673,3 +677,4 @@ if __name__ == "__main__":
     window.show()
     exitStatus = app.exec_()
     sys.exit(exitStatus)
+    
