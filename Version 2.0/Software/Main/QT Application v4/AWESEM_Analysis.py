@@ -69,8 +69,11 @@ def preformCalibration():
 #  system to the given 256 sample input at the given frequency.
 #
 def findSteadyStateResp(systemModel, wavetableRaw, waveformFrequency, waveformVpp):
-    transientTime = 1.0
-    extendPeriods = 2.0
+    transientTime = 0;
+    extendPeriods = 1.0;
+    if(waveformFrequency > 0.5):
+            transientTime = 1.0
+            extendPeriods = 2.0
     waveformPeriodLength    = 1.0 / waveformFrequency
     wavetablePadded         = (np.append(wavetableRaw, wavetableRaw[0]) / 32767.0) * (waveformVpp / 2.0) # Convertes 16 bit signed integer to vpp, also pads with first sample at end to emulate wraparound, note that MCU does the same thing
     wavetableTimes          = np.append(np.arange(start = 0, stop = waveformPeriodLength, step = waveformPeriodLength / float(wavetableRaw.shape[0])), waveformPeriodLength + waveformPeriodLength / float(wavetableRaw.shape[0]))
@@ -108,6 +111,7 @@ def normalizeDisplacement(stableLUT, imageDimension):
 #   'amplitude'  Amplitude of wave
 #   'frequency' Frequency of the sine in hz
 #   'phase'     Phase of the sine wave as a percentage of 2pi
+
 #   'baseOffset' Shift upwards applied to all points. By default set to amplitude (so that base is 0)
 #
 def cos(inputTime, amplitude, frequency, phase, baseOffset = None):

@@ -113,6 +113,8 @@ class TestBench(QMainWindow):
     # Trackers for GUI elements, used so that the menu will bounce back to previous menu item after selecting option to load custom data
     __currentXWaveformOpt  = None
     __currentYWaveformOpt  = None
+    
+    
     __currentLUTModeOpt    = None
     # Tracker for current scale so that files can have these when exported, set to None to disable axis
     __currentXLength        = None # (microns)
@@ -131,8 +133,9 @@ class TestBench(QMainWindow):
         self.setDefaults()
         self.linkUiCallbacks()
         self.__registerTh.start()
+
+
         self.updateWaveforms()
-        self.updateSamplingReconstruction()
 
     def __del__(self):
         self.shutdownResources()
@@ -268,20 +271,37 @@ class TestBench(QMainWindow):
         # Scan Controls
 
         # Vertical Axis
+        
+        defaultVerticalWaveformIndex = self.__UiElems.Vertical_Waveform_Combobox.findText(Const.DEFAULT_VERTWAV)
+        if(defaultVerticalWaveformIndex >= 0):
+            self.__UiElems.Vertical_Waveform_Combobox.setCurrentIndex(defaultVerticalWaveformIndex)           
+        else:
+            print("Default set vertical waveform does not match a loaded file, check the value in the constants file.")
         self.__UiElems.Vertical_Amplitude_Spinbox.setValue(Const.DEFAULT_VERTAM)
         self.__UiElems.Vertical_Frequency_Spinbox.setValue(Const.DEFAULT_VERTHZ)
-        self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
+        self.__UiElems.Sampling_Phase_Vertical_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
 
         # Horizontal Axis
+        defaultHorizontalWaveformIndex = self.__UiElems.Horizontal_Waveform_Combobox.findText(Const.DEFAULT_HORZWAV)
+        if(defaultHorizontalWaveformIndex >= 0):
+            self.__UiElems.Horizontal_Waveform_Combobox.setCurrentIndex(defaultHorizontalWaveformIndex)           
+        else:
+            print("Default set horizontal waveform does not match a loaded file, check the value in the constants file.")
         self.__UiElems.Horizontal_Amplitude_Spinbox.setValue(Const.DEFAULT_HORZAM)
         self.__UiElems.Horizontal_Frequency_Spinbox.setValue(Const.DEFAULT_HORZHZ)
-        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_VERTPHASE)
+        self.__UiElems.Sampling_Phase_Horizontal_Spinbox.setValue(Const.DEFAULT_HORZPHASE)
 
-        # Sampling
+        # Sampling and reconstruction
+        defaultReconstructionIndex = self.__UiElems.Sampling_LUT_Combobox.findText(Const.DEFAULT_LUTMODEL)
+        if(defaultReconstructionIndex >= 0):
+            self.__UiElems.Sampling_LUT_Combobox.setCurrentIndex(defaultReconstructionIndex)           
+        else:
+            print("Default set LUT method does not match a loaded model or method, check the value in the constants file.")
         self.__UiElems.Sampling_Frequency_Spinbox.setValue(Const.DEFAULT_ADC_SAMPLEFREQUENCY)
         self.__UiElems.Sampling_Horizontal_Collection_Combobox.setCurrentIndex(Const.DEFAULT_HORZSRC)
         self.__UiElems.Sampling_Vertical_Collection_Combobox.setCurrentIndex(Const.DEFAULT_VERTSRC)
         # TODO sample averaging
+        
 
         # Console
         self.__UiElems.Console_Preformance_Checkbox.setCheckState(1)
@@ -677,4 +697,5 @@ if __name__ == "__main__":
     window.show()
     exitStatus = app.exec_()
     sys.exit(exitStatus)
+    
     
